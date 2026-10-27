@@ -1,798 +1,731 @@
 <!DOCTYPE html>
 <html lang="it">
 <head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>AI OKX Trader Pro</title>
-    <style>
-        :root {
-            --bg-dark: #0f1115;
-            --bg-card: #181b22;
-            --bg-header: #12151c;
-            --accent-green: #00c853;
-            --accent-red: #ff3d00;
-            --accent-blue: #29b6f6;
-            --accent-gold: #ffd700;
-            --text-main: #ffffff;
-            --text-sub: #8e94a0;
-            --border-color: #262b36;
-        }
-
-        * {
-            box-sizing: border-box;
-            margin: 0;
-            padding: 0;
-            font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
-            -webkit-tap-highlight-color: transparent;
-        }
-
-        body {
-            background-color: var(--bg-dark);
-            color: var(--text-main);
-            display: flex;
-            flex-direction: column;
-            height: 100vh;
-            overflow: hidden;
-        }
-
-        header {
-            background-color: var(--bg-header);
-            padding: 12px 16px;
-            border-bottom: 1px solid var(--border-color);
-        }
-
-        .header-top {
-            display: flex;
-            justify-content: space-between;
-            align-items: center;
-            margin-bottom: 8px;
-        }
-
-        .symbol-selector-wrapper {
-            display: flex;
-            align-items: center;
-            gap: 8px;
-        }
-
-        .status-dot {
-            width: 8px;
-            height: 8px;
-            background-color: var(--accent-green);
-            border-radius: 50%;
-            box-shadow: 0 0 8px var(--accent-green);
-        }
-
-        #symbolSelect {
-            background: #232834;
-            color: var(--text-main);
-            border: 1px solid var(--border-color);
-            padding: 6px 10px;
-            border-radius: 6px;
-            font-size: 0.95rem;
-            font-weight: 700;
-            outline: none;
-        }
-
-        .api-btn {
-            background-color: #232834;
-            color: var(--text-main);
-            border: 1px solid var(--border-color);
-            padding: 6px 12px;
-            border-radius: 6px;
-            font-size: 0.8rem;
-            font-weight: 600;
-            cursor: pointer;
-        }
-
-        .metrics-grid {
-            display: grid;
-            grid-template-columns: repeat(3, 1fr);
-            gap: 8px;
-            background: rgba(0,0,0,0.2);
-            padding: 8px;
-            border-radius: 8px;
-        }
-
-        .metric-item {
-            display: flex;
-            flex-direction: column;
-        }
-
-        .metric-label {
-            font-size: 0.7rem;
-            color: var(--text-sub);
-            text-transform: uppercase;
-        }
-
-        .metric-value {
-            font-size: 0.95rem;
-            font-weight: 700;
-        }
-
-        main {
-            flex: 1;
-            overflow-y: auto;
-            padding: 12px;
-            display: flex;
-            flex-direction: column;
-            gap: 12px;
-        }
-
-        .tab-content {
-            display: none;
-            flex-direction: column;
-            gap: 12px;
-        }
-
-        .tab-content.active {
-            display: flex;
-        }
-
-        .ai-card {
-            background: linear-gradient(135deg, #1e2430 0%, #161a23 100%);
-            border: 1px solid var(--border-color);
-            border-radius: 12px;
-            padding: 14px;
-            box-shadow: 0 4px 15px rgba(0,0,0,0.3);
-        }
-
-        .ai-header {
-            display: flex;
-            justify-content: space-between;
-            align-items: center;
-            margin-bottom: 10px;
-        }
-
-        .ai-title {
-            font-size: 0.85rem;
-            color: var(--accent-blue);
-            font-weight: 700;
-            letter-spacing: 0.5px;
-        }
-
-        .toggle-container {
-            display: flex;
-            align-items: center;
-            gap: 8px;
-            font-size: 0.8rem;
-            color: var(--text-sub);
-        }
-
-        .switch {
-            position: relative;
-            display: inline-block;
-            width: 44px;
-            height: 22px;
-        }
-
-        .switch input { opacity: 0; width: 0; height: 0; }
-
-        .slider {
-            position: absolute;
-            cursor: pointer;
-            top: 0; left: 0; right: 0; bottom: 0;
-            background-color: #2c3240;
-            transition: .3s;
-            border-radius: 22px;
-        }
-
-        .slider:before {
-            position: absolute;
-            content: "";
-            height: 16px; width: 16px;
-            left: 3px; bottom: 3px;
-            background-color: white;
-            transition: .3s;
-            border-radius: 50%;
-        }
-
-        input:checked + .slider { background-color: var(--accent-green); }
-        input:checked + .slider:before { transform: translateX(22px); }
-
-        .ai-recommendation {
-            display: flex;
-            align-items: center;
-            justify-content: space-between;
-            background: rgba(255,255,255,0.03);
-            padding: 10px;
-            border-radius: 8px;
-            margin-bottom: 10px;
-        }
-
-        .signal-badge {
-            font-size: 1.1rem;
-            font-weight: 800;
-            padding: 6px 12px;
-            border-radius: 6px;
-            text-transform: uppercase;
-        }
-
-        .signal-buy { background: rgba(0, 200, 83, 0.2); color: var(--accent-green); border: 1px solid var(--accent-green); }
-        .signal-sell { background: rgba(255, 61, 0, 0.2); color: var(--accent-red); border: 1px solid var(--accent-red); }
-
-        .prob-bar-bg {
-            height: 6px;
-            background: #262b36;
-            border-radius: 3px;
-            overflow: hidden;
-            margin-top: 4px;
-        }
-
-        .prob-bar-fill {
-            height: 100%;
-            background: var(--accent-blue);
-            width: 85%;
-            transition: width 0.5s ease;
-        }
-
-        .btn-action-ai {
-            width: 100%;
-            padding: 12px;
-            background: var(--accent-blue);
-            color: #000;
-            border: none;
-            border-radius: 8px;
-            font-weight: 800;
-            font-size: 0.95rem;
-            cursor: pointer;
-        }
-
-        .chart-card {
-            background: var(--bg-card);
-            border-radius: 12px;
-            padding: 12px;
-            border: 1px solid var(--border-color);
-            display: flex;
-            flex-direction: column;
-            gap: 8px;
-        }
-
-        .chart-header {
-            display: flex;
-            justify-content: space-between;
-            align-items: center;
-        }
-
-        .live-price {
-            font-size: 1.2rem;
-            font-weight: 700;
-        }
-
-        #chartCanvas {
-            width: 100%;
-            height: 180px;
-            background: #111318;
-            border-radius: 8px;
-        }
-
-        .trade-controls {
-            display: grid;
-            grid-template-columns: 1fr 1fr;
-            gap: 10px;
-        }
-
-        .lot-selector {
-            grid-column: span 2;
-            display: flex;
-            justify-content: space-between;
-            background: var(--bg-card);
-            padding: 4px;
-            border-radius: 8px;
-            border: 1px solid var(--border-color);
-        }
-
-        .lot-btn {
-            flex: 1;
-            background: transparent;
-            border: none;
-            color: var(--text-sub);
-            padding: 6px;
-            font-size: 0.8rem;
-            font-weight: 700;
-            border-radius: 4px;
-            cursor: pointer;
-        }
-
-        .lot-btn.active {
-            background: #2a303d;
-            color: var(--text-main);
-        }
-
-        .btn-trade {
-            padding: 14px;
-            border: none;
-            border-radius: 8px;
-            font-weight: 800;
-            font-size: 1.1rem;
-            color: white;
-            cursor: pointer;
-            display: flex;
-            flex-direction: column;
-            align-items: center;
-        }
-
-        .btn-buy { background: var(--accent-green); }
-        .btn-sell { background: var(--accent-red); }
-
-        .positions-card {
-            background: var(--bg-card);
-            border-radius: 12px;
-            padding: 12px;
-            border: 1px solid var(--border-color);
-        }
-
-        .positions-header {
-            display: flex;
-            justify-content: space-between;
-            align-items: center;
-            margin-bottom: 8px;
-            font-size: 0.85rem;
-            color: var(--text-sub);
-        }
-
-        .position-item {
-            display: flex;
-            justify-content: space-between;
-            align-items: center;
-            padding: 10px 0;
-            border-bottom: 1px solid rgba(255,255,255,0.05);
-        }
-
-        .pos-symbol { font-weight: 700; font-size: 0.9rem; }
-        .pos-type { font-size: 0.75rem; font-weight: 700; padding: 2px 6px; border-radius: 4px; }
-        .pos-type.buy { color: var(--accent-green); background: rgba(0,200,83,0.1); }
-        .pos-type.sell { color: var(--accent-red); background: rgba(255,61,0,0.1); }
-
-        .pos-pnl { font-weight: 700; font-size: 0.95rem; }
-        .pnl-plus { color: var(--accent-green); }
-        .pnl-minus { color: var(--accent-red); }
-
-        .btn-close-pos {
-            background: #2a303d;
-            border: none;
-            color: var(--text-main);
-            padding: 4px 8px;
-            border-radius: 4px;
-            font-size: 0.75rem;
-            cursor: pointer;
-        }
-
-        nav {
-            background-color: var(--bg-header);
-            border-top: 1px solid var(--border-color);
-            display: grid;
-            grid-template-columns: repeat(4, 1fr);
-            padding: 8px 0;
-        }
-
-        .nav-item {
-            display: flex;
-            flex-direction: column;
-            align-items: center;
-            gap: 4px;
-            color: var(--text-sub);
-            font-size: 0.7rem;
-            cursor: pointer;
-        }
-
-        .nav-item.active {
-            color: var(--accent-blue);
-        }
-
-        .modal {
-            display: none;
-            position: fixed;
-            top: 0; left: 0; right: 0; bottom: 0;
-            background: rgba(0,0,0,0.8);
-            z-index: 100;
-            align-items: center;
-            justify-content: center;
-            padding: 20px;
-        }
-
-        .modal-content {
-            background: var(--bg-card);
-            border-radius: 12px;
-            padding: 20px;
-            width: 100%;
-            max-width: 400px;
-            border: 1px solid var(--border-color);
-        }
-
-        .form-group {
-            margin-bottom: 12px;
-        }
-
-        .form-group label {
-            display: block;
-            font-size: 0.8rem;
-            color: var(--text-sub);
-            margin-bottom: 4px;
-        }
-
-        .form-group input, .form-group select {
-            width: 100%;
-            padding: 10px;
-            background: #111318;
-            border: 1px solid var(--border-color);
-            border-radius: 6px;
-            color: white;
-            font-size: 0.9rem;
-        }
-    </style>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>AI OKX Trader Pro</title>
+  <style>
+    :root {
+      --bg-dark: #0f1115;
+      --bg-card: #181b22;
+      --bg-header: #12151c;
+      --accent-green: #00c853;
+      --accent-red: #ff3d00;
+      --accent-blue: #29b6f6;
+      --accent-gold: #ffd700;
+      --text-main: #ffffff;
+      --text-sub: #8e9a40;
+      --border-color: #262b36;
+    }
+    * {
+      box-sizing: border-box;
+      margin: 0;
+      padding: 0;
+      font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+      -webkit-tap-highlight-color: transparent;
+    }
+    body {
+      background-color: var(--bg-dark);
+      color: var(--text-main);
+      display: flex;
+      flex-direction: column;
+      height: 100vh;
+      overflow: hidden;
+    }
+    header {
+      background-color: var(--bg-header);
+      padding: 12px 16px;
+      border-bottom: 1px solid var(--border-color);
+    }
+    .header-top {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      margin-bottom: 8px;
+    }
+    .status-dot {
+      width: 8px;
+      height: 8px;
+      background-color: var(--accent-green);
+      border-radius: 50%;
+      box-shadow: 0 0 8px var(--accent-green);
+    }
+    #symbolSelect {
+      background: #232834;
+      color: var(--text-main);
+      border: 1px solid var(--border-color);
+      padding: 6px 10px;
+      border-radius: 6px;
+      font-size: 0.95rem;
+      font-weight: 700;
+      outline: none;
+    }
+    .api-btn {
+      background: #232834;
+      color: var(--text-main);
+      border: 1px solid var(--border-color);
+      padding: 6px 12px;
+      border-radius: 6px;
+      font-size: 0.8rem;
+      font-weight: 600;
+      cursor: pointer;
+    }
+    .metrics-grid {
+      display: grid;
+      grid-template-columns: repeat(3, 1fr);
+      gap: 8px;
+      background: rgba(0, 0, 0, 0.2);
+      padding: 8px;
+      border-radius: 8px;
+    }
+    .metric-item {
+      display: flex;
+      flex-direction: column;
+    }
+    .metric-label {
+      font-size: 0.7rem;
+      color: var(--text-sub);
+      text-transform: uppercase;
+    }
+    .metric-value {
+      font-size: 0.95rem;
+      font-weight: 700;
+    }
+    main {
+      flex: 1;
+      overflow-y: auto;
+      padding: 12px;
+      display: flex;
+      flex-direction: column;
+      gap: 12px;
+    }
+    .tab-content {
+      display: none;
+      flex-direction: column;
+      gap: 12px;
+    }
+    .tab-content.active {
+      display: flex;
+    }
+    .ai-card {
+      background: linear-gradient(135deg, #1e2430 0%, #161a23 100%);
+      border: 1px solid var(--border-color);
+      border-radius: 12px;
+      padding: 14px;
+      box-shadow: 0 4px 15px rgba(0,0,0,0.3);
+    }
+    .ai-header {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      margin-bottom: 10px;
+    }
+    .ai-title {
+      font-size: 0.85rem;
+      color: var(--accent-blue);
+      font-weight: 700;
+      letter-spacing: 0.5px;
+    }
+    .toggle-container {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      font-size: 0.8rem;
+      color: var(--text-sub);
+    }
+    .switch {
+      position: relative;
+      display: inline-block;
+      width: 44px;
+      height: 22px;
+    }
+    .switch input {
+      opacity: 0;
+      width: 0;
+      height: 0;
+    }
+    .slider {
+      position: absolute;
+      cursor: pointer;
+      top: 0; left: 0; right: 0; bottom: 0;
+      background-color: #2c3240;
+      transition: .3s;
+      border-radius: 22px;
+    }
+    .slider:before {
+      position: absolute;
+      content: "";
+      height: 16px;
+      width: 16px;
+      left: 3px; bottom: 3px;
+      background-color: white;
+      transition: .3s;
+      border-radius: 50%;
+    }
+    input:checked + .slider {
+      background-color: var(--accent-green);
+    }
+    input:checked + .slider:before {
+      transform: translateX(22px);
+    }
+    .signal-badge {
+      font-size: 1.1rem;
+      font-weight: 800;
+      padding: 6px 12px;
+      border-radius: 6px;
+      text-transform: uppercase;
+      display: inline-block;
+      margin-top: 6px;
+      margin-bottom: 10px;
+    }
+    .signal-buy { background: rgba(0, 200, 83, 0.2); color: var(--accent-green); border: 1px solid var(--accent-green); }
+    .signal-sell { background: rgba(255, 61, 0, 0.2); color: var(--accent-red); border: 1px solid var(--accent-red); }
+    
+    .prob-bar-bg {
+      height: 6px;
+      background: #262b36;
+      border-radius: 3px;
+      overflow: hidden;
+      margin-top: 4px;
+    }
+    .prob-bar-fill {
+      height: 100%;
+      background: var(--accent-blue);
+      width: 85%;
+      transition: width 0.5s ease;
+    }
+    .btn-action-ai {
+      width: 100%;
+      padding: 12px;
+      background: var(--accent-blue);
+      color: #000;
+      border: none;
+      border-radius: 8px;
+      font-weight: 800;
+      font-size: 0.95rem;
+      cursor: pointer;
+      margin-top: 10px;
+    }
+    .chart-card {
+      background: var(--bg-card);
+      border-radius: 12px;
+      border: 1px solid var(--border-color);
+      padding: 12px;
+      display: flex;
+      flex-direction: column;
+      gap: 8px;
+    }
+    .chart-header {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+    }
+    .live-price {
+      font-size: 1.2rem;
+      font-weight: 700;
+    }
+    #chartCanvas {
+      width: 100%;
+      height: 180px;
+      background: #111318;
+      border-radius: 8px;
+    }
+    .trade-controls {
+      display: grid;
+      grid-template-columns: repeat(5, 1fr);
+      gap: 10px;
+    }
+    .lot-selector {
+      grid-column: span 5;
+      display: flex;
+      justify-content: space-between;
+      background: var(--bg-card);
+      padding: 4px;
+      border-radius: 8px;
+    }
+    .lot-btn {
+      flex: 1;
+      background: transparent;
+      border: none;
+      color: var(--text-sub);
+      padding: 6px;
+      font-size: 0.8rem;
+      font-weight: 700;
+      cursor: pointer;
+      border-radius: 4px;
+    }
+    .lot-btn.active {
+      background: #2a303d;
+      color: var(--text-main);
+    }
+    .btn-trade {
+      padding: 14px;
+      border: none;
+      border-radius: 8px;
+      font-weight: 800;
+      font-size: 1.1rem;
+      color: white;
+      cursor: pointer;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+    }
+    .btn-buy { background: var(--accent-green); }
+    .btn-sell { background: var(--accent-red); }
+    .positions-card {
+      background: var(--bg-card);
+      border-radius: 12px;
+      padding: 12px;
+      border: 1px solid var(--border-color);
+    }
+    .positions-header {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      margin-bottom: 8px;
+      font-size: 0.85rem;
+    }
+    .position-item {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      padding: 10px 0;
+      border-bottom: 1px solid rgba(255,255,255,0.05);
+    }
+    .pos-symbol { font-weight: 700; font-size: 0.75rem; }
+    .pos-type { font-size: 0.75rem; text-transform: uppercase; padding: 2px 6px; border-radius: 4px; }
+    .pos-type.buy { background: rgba(0,200,83,0.1); color: var(--accent-green); }
+    .pos-type.sell { background: rgba(255,61,0,0.1); color: var(--accent-red); }
+    .pnl-plus { color: var(--accent-green); }
+    .pnl-minus { color: var(--accent-red); }
+    .btn-close-pos {
+      background: #2a303d;
+      border: none;
+      color: var(--text-main);
+      padding: 4px 8px;
+      border-radius: 4px;
+      font-size: 0.75rem;
+      cursor: pointer;
+    }
+    nav {
+      background-color: var(--bg-header);
+      border-top: 1px solid var(--border-color);
+      display: grid;
+      grid-template-columns: repeat(4, 1fr);
+      padding: 8px 0;
+    }
+    .nav-item {
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      gap: 4px;
+      color: var(--text-sub);
+      font-size: 0.7rem;
+      cursor: pointer;
+    }
+    .nav-item.active {
+      color: var(--accent-blue);
+    }
+    .modal {
+      display: none;
+      position: fixed;
+      top: 0; left: 0; right: 0; bottom: 0;
+      background: rgba(0,0,0,0.8);
+      z-index: 100;
+      align-items: center;
+      justify-content: center;
+      padding: 20px;
+    }
+    .modal-content {
+      background: var(--bg-card);
+      border-radius: 12px;
+      padding: 20px;
+      width: 100%;
+      max-width: 400px;
+      border: 1px solid var(--border-color);
+    }
+    .form-group {
+      margin-bottom: 12px;
+    }
+    .form-group label {
+      font-size: 0.8rem;
+      color: var(--text-sub);
+      display: block;
+      margin-bottom: 4px;
+    }
+    .form-group input, .form-group select {
+      width: 100%;
+      padding: 10px;
+      background: #111318;
+      border: 1px solid var(--border-color);
+      border-radius: 6px;
+      color: white;
+      font-size: 0.9rem;
+    }
+  </style>
 </head>
 <body>
-
-    <header>
-        <div class="header-top">
-            <div class="symbol-selector-wrapper">
-                <div class="status-dot"></div>
-                <select id="symbolSelect" onchange="changeSymbol()">
-                    <option value="BTC/USDT">BTC/USDT</option>
-                    <option value="ETH/USDT">ETH/USDT</option>
-                    <option value="SOL/USDT">SOL/USDT</option>
-                    <option value="XRP/USDT">XRP/USDT</option>
-                </select>
-            </div>
-            <button class="api-btn" onclick="openModal()">🔑 API OKX</button>
-        </div>
-
-        <div class="metrics-grid">
-            <div class="metric-item">
-                <span class="metric-label">Balance</span>
-                <span class="metric-value" id="balanceVal">$10,000.00</span>
-            </div>
-            <div class="metric-item">
-                <span class="metric-label">Equity</span>
-                <span class="metric-value" id="equityVal">$10,000.00</span>
-            </div>
-            <div class="metric-item">
-                <span class="metric-label">P&L Totale</span>
-                <span class="metric-value pnl-plus" id="pnlVal">+$0.00</span>
-            </div>
-        </div>
-    </header>
-
-    <main>
-        <div id="tab-trade" class="tab-content active">
-            
-            <div class="ai-card">
-                <div class="ai-header">
-                    <span class="ai-title">🤖 MOTORIA PREVISIONALE QUANT</span>
-                    <div class="toggle-container">
-                        <span>Auto-Pilot</span>
-                        <label class="switch">
-                            <input type="checkbox" id="autopilotCheck" onchange="toggleAutopilot()">
-                            <span class="slider"></span>
-                        </label>
-                    </div>
-                </div>
-
-                <div class="ai-recommendation">
-                    <div>
-                        <div style="font-size: 0.75rem; color: var(--text-sub);">CONSIGLIO ATTUALE:</div>
-                        <div style="font-size: 0.85rem; font-weight: 700; margin-top:2px;" id="aiReason">RSI & MACD in sintonia</div>
-                    </div>
-                    <div class="signal-badge signal-buy" id="aiSignalBadge">COMPRA</div>
-                </div>
-
-                <div style="margin-bottom: 10px;">
-                    <div style="display: flex; justify-content: space-between; font-size: 0.75rem; color: var(--text-sub);">
-                        <span>Affidabilità Segnale</span>
-                        <span id="probVal">88%</span>
-                    </div>
-                    <div class="prob-bar-bg">
-                        <div class="prob-bar-fill" id="probBar"></div>
-                    </div>
-                </div>
-
-                <button class="btn-action-ai" onclick="executeAiTrade()">⚡ ESEGUI CONSIGLIO IA ADESSO</button>
-            </div>
-
-            <div class="chart-card">
-                <div class="chart-header">
-                    <span style="font-size:0.8rem; color:var(--text-sub);" id="chartTitle">Grafico Reale (1H) - BTC</span>
-                    <span class="live-price" id="livePrice">$80,084.01</span>
-                </div>
-                <canvas id="chartCanvas"></canvas>
-            </div>
-
-            <div class="trade-controls">
-                <div class="lot-selector">
-                    <button class="lot-btn active" onclick="setLot(0.01, this)">0.01</button>
-                    <button class="lot-btn" onclick="setLot(0.05, this)">0.05</button>
-                    <button class="lot-btn" onclick="setLot(0.10, this)">0.10</button>
-                    <button class="lot-btn" onclick="setLot(0.50, this)">0.50</button>
-                </div>
-
-                <button class="btn-trade btn-sell" onclick="placeOrder('SELL')">
-                    <span>VENDI</span>
-                    <span style="font-size: 0.75rem; opacity: 0.8;">SHORT</span>
-                </button>
-
-                <button class="btn-trade btn-buy" onclick="placeOrder('BUY')">
-                    <span>COMPRA</span>
-                    <span style="font-size: 0.75rem; opacity: 0.8;">LONG</span>
-                </button>
-            </div>
-
-            <div class="positions-card">
-                <div class="positions-header">
-                    <span>POSIZIONI APERTE (<span id="posCount">0</span>)</span>
-                    <span style="color:var(--accent-red); cursor:pointer;" onclick="closeAllPositions()">Chiudi Tutte</span>
-                </div>
-                <div id="positionsContainer">
-                    <div style="text-align:center; padding: 15px; color:var(--text-sub); font-size:0.85rem;">Nessuna posizione aperta</div>
-                </div>
-            </div>
-
-        </div>
-    </main>
-
-    <nav>
-        <div class="nav-item active">
-            <span>📊</span>
-            <span>Trade</span>
-        </div>
-        <div class="nav-item" onclick="alert('Grafici avanzati attivi')">
-            <span>📈</span>
-            <span>Grafici</span>
-        </div>
-        <div class="nav-item" onclick="alert('Mercati OKX sincronizzati')">
-            <span>📋</span>
-            <span>Quotazioni</span>
-        </div>
-        <div class="nav-item" onclick="alert('Storico ordini salvato')">
-            <span>📜</span>
-            <span>Storico</span>
-        </div>
-    </nav>
-
-    <div class="modal" id="apiModal">
-        <div class="modal-content">
-            <h3 style="margin-bottom: 12px;">🔑 Configurazione OKX</h3>
-            
-            <div class="form-group">
-                <label>Modalità Account</label>
-                <select id="apiEnv">
-                    <option value="demo">Demo / Sandbox (Test Sicuro)</option>
-                    <option value="real">Reale (Soldi Veri)</option>
-                </select>
-            </div>
-
-            <div class="form-group">
-                <label>API Key OKX</label>
-                <input type="text" id="apiKey" placeholder="Inserisci API Key">
-            </div>
-
-            <div class="form-group">
-                <label>Secret Key OKX</label>
-                <input type="password" id="apiSecret" placeholder="Inserisci Secret Key">
-            </div>
-
-            <div class="form-group">
-                <label>Passphrase API</label>
-                <input type="password" id="apiPass" placeholder="Inserisci Passphrase">
-            </div>
-
-            <button class="btn-action-ai" onclick="saveSettings()">SALVA E CONNETTI</button>
-        </div>
+  <header>
+    <div class="header-top">
+      <div style="display: flex; align-items: center; gap: 8px;">
+        <div class="status-dot"></div>
+        <select id="symbolSelect" onchange="changeSymbol()">
+          <option value="BTC/USDT">BTC/USDT</option>
+          <option value="ETH/USDT">ETH/USDT</option>
+          <option value="SOL/USDT">SOL/USDT</option>
+          <option value="XRP/USDT">XRP/USDT</option>
+        </select>
+      </div>
+      <button class="api-btn" onclick="openModal()">🔑 API OKX</button>
     </div>
+    <div class="metrics-grid">
+      <div class="metric-item">
+        <span class="metric-label">Balance</span>
+        <span class="metric-value" id="balanceVal">$10,000.00</span>
+      </div>
+      <div class="metric-item">
+        <span class="metric-label">Equity</span>
+        <span class="metric-value" id="equityVal">$10,000.00</span>
+      </div>
+      <div class="metric-item">
+        <span class="metric-label">P&L Totale</span>
+        <span class="metric-value pnl-plus" id="pnlVal">+$0.00</span>
+      </div>
+    </div>
+  </header>
 
-    <script>
-        const basePrices = {
-            'BTC/USDT': 80084.01,
-            'ETH/USDT': 3240.50,
-            'SOL/USDT': 185.20,
-            'XRP/USDT': 1.45
-        };
+  <main>
+    <div id="tab-trade" class="tab-content active">
+      <div class="ai-card">
+        <div class="ai-header">
+          <span class="ai-title">🤖 MOTORIA PREVISIONALE QUANT</span>
+          <div class="toggle-container">
+            <span>Auto-Pilot</span>
+            <label class="switch">
+              <input type="checkbox" id="autopilotCheck" onchange="toggleAutopilot()">
+              <span class="slider"></span>
+            </label>
+          </div>
+        </div>
+        <div style="font-size: 0.75rem; color: var(--text-sub);">CONSIGLIO ATTUALE:</div>
+        <div id="aiSignalBadge" class="signal-badge signal-buy">COMPRA</div>
+        <div style="font-size: 0.75rem; color: var(--text-sub);">Affidabilità Segnale: <span id="probVal">88%</span></div>
+        <div class="prob-bar-bg">
+          <div id="probBar" class="prob-bar-fill"></div>
+        </div>
+        <button class="btn-action-ai" onclick="executeAiTrade()">⚡ ESEGUI CONSIGLIO IA ADESSO</button>
+      </div>
 
-        let currentSymbol = 'BTC/USDT';
-        let currentPrice = basePrices[currentSymbol];
-        let balance = 10000.00;
-        let selectedLot = 0.01;
-        let positions = [];
-        let autoPilot = false;
-        let aiCurrentSignal = 'BUY';
-        let aiProb = 88;
+      <div class="chart-card">
+        <div class="chart-header">
+          <span style="font-size: 0.85rem; font-weight: 700;" id="chartTitle">Grafico Reale (1H) - BTC</span>
+          <span class="live-price" id="livePrice">$80,084.01</span>
+        </div>
+        <canvas id="chartCanvas"></canvas>
+        <div class="trade-controls">
+          <div class="lot-selector">
+            <button class="lot-btn active" onclick="setLot(0.01, this)">0.01</button>
+            <button class="lot-btn" onclick="setLot(0.05, this)">0.05</button>
+            <button class="lot-btn" onclick="setLot(0.10, this)">0.10</button>
+            <button class="lot-btn" onclick="setLot(0.50, this)">0.50</button>
+          </div>
+          <button class="btn-trade btn-sell" onclick="placeOrder('SELL')">
+            <span>VENDI</span>
+            <span style="font-size: 0.75rem; opacity: 0.8;">SHORT</span>
+          </button>
+          <button class="btn-trade btn-buy" style="grid-column: span 4;" onclick="placeOrder('BUY')">
+            <span>COMPRA</span>
+            <span style="font-size: 0.75rem; opacity: 0.8;">LONG</span>
+          </button>
+        </div>
+      </div>
 
-        const canvas = document.getElementById('chartCanvas');
-        const ctx = canvas.getContext('2d');
-        let chartData = Array.from({length: 30}, () => currentPrice + (Math.random() - 0.5) * (currentPrice * 0.005));
+      <div class="positions-card">
+        <div class="positions-header">
+          <span>POSIZIONI APERTE (<span id="posCount">0</span>)</span>
+          <span style="color: var(--accent-red); cursor: pointer;" onclick="closeAllPositions()">Chiudi Tutte</span>
+        </div>
+        <div id="positionsContainer" style="text-align: center; padding: 15px; color: var(--text-sub); font-size: 0.85rem;">
+          Nessuna posizione aperta
+        </div>
+      </div>
+    </div>
+  </main>
 
-        function changeSymbol() {
-            const select = document.getElementById('symbolSelect');
-            currentSymbol = select.value;
-            currentPrice = basePrices[currentSymbol];
-            document.getElementById('chartTitle').innerText = `Grafico Reale (1H) - ${currentSymbol.split('/')[0]}`;
-            chartData = Array.from({length: 30}, () => currentPrice + (Math.random() - 0.5) * (currentPrice * 0.005));
-            drawChart();
+  <nav>
+    <div class="nav-item active">
+      <span>🏠</span>
+      <span>Trade</span>
+    </div>
+    <div class="nav-item" onclick="alert('Grafici avanzati attivi')">
+      <span>📈</span>
+      <span>Grafici</span>
+    </div>
+    <div class="nav-item" onclick="alert('Mercati OKX sincronizzati')">
+      <span>📊</span>
+      <span>Quotazioni</span>
+    </div>
+    <div class="nav-item" onclick="alert('Storico ordini salvato')">
+      <span>📜</span>
+      <span>Storico</span>
+    </div>
+  </nav>
+
+  <div class="modal" id="apiModal">
+    <div class="modal-content">
+      <h3 style="margin-bottom: 12px;">🔑 Configurazione OKX</h3>
+      <div class="form-group">
+        <label>Modalità Account</label>
+        <select id="apiEnv">
+          <option value="demo">Demo / Sandbox (Test Sicuro)</option>
+          <option value="real">Reale (Soldi Veri)</option>
+        </select>
+      </div>
+      <div class="form-group">
+        <label>API Key OKX</label>
+        <input type="text" id="apiKey" placeholder="Inserisci API Key">
+      </div>
+      <div class="form-group">
+        <label>Secret Key OKX</label>
+        <input type="password" id="apiSecret" placeholder="Inserisci Secret Key">
+      </div>
+      <div class="form-group">
+        <label>Passphrase API</label>
+        <input type="password" id="apiPass" placeholder="Inserisci Passphrase">
+      </div>
+      <button class="btn-action-ai" onclick="saveSettings()">SALVA E CONNETTI</button>
+    </div>
+  </div>
+
+  <script>
+    const basePrices = {
+      'BTC/USDT': 80084.01,
+      'ETH/USDT': 3240.50,
+      'SOL/USDT': 185.20,
+      'XRP/USDT': 1.45
+    };
+
+    let currentSymbol = 'BTC/USDT';
+    let currentPrice = basePrices[currentSymbol];
+    let balance = 10000.00;
+    let selectedLot = 0.01;
+    let positions = [];
+    let autoPilot = false;
+    let aiCurrentSignal = 'BUY';
+    let aiProb = 88;
+
+    const canvas = document.getElementById('chartCanvas');
+    const ctx = canvas.getContext('2d');
+    let chartData = Array.from({ length: 30 }, () => currentPrice);
+
+    function changeSymbol() {
+      const select = document.getElementById('symbolSelect');
+      currentSymbol = select.value;
+      currentPrice = basePrices[currentSymbol];
+      chartData = Array.from({ length: 30 }, () => currentPrice);
+      document.getElementById('chartTitle').innerText = `Grafico Reale (1H) - ${currentSymbol}`;
+      drawChart();
+    }
+
+    function drawChart() {
+      canvas.width = canvas.offsetWidth;
+      canvas.height = canvas.offsetHeight;
+      ctx.clearRect(0, 0, canvas.width, canvas.height);
+
+      const min = Math.min(...chartData);
+      const max = Math.max(...chartData);
+      const range = max - min || 1;
+
+      ctx.strokeStyle = '#29b6f6';
+      ctx.lineWidth = 2;
+      ctx.beginPath();
+
+      chartData.forEach((val, index) => {
+        const x = (index / (chartData.length - 1)) * canvas.width;
+        const y = canvas.height - ((val - min) / range) * (canvas.height - 20) - 10;
+        if (index === 0) ctx.moveTo(x, y);
+        else ctx.lineTo(x, y);
+      });
+      ctx.stroke();
+    }
+
+    setInterval(() => {
+      const volatility = currentPrice * 0.0006;
+      const change = (Math.random() - 0.49) * volatility;
+      currentPrice += change;
+      basePrices[currentSymbol] = currentPrice;
+
+      chartData.push(currentPrice);
+      chartData.shift();
+
+      document.getElementById('livePrice').innerText = `$${currentPrice.toLocaleString('en-US', {minimumFractionDigits: 2, maximumFractionDigits: 2})}`;
+      drawChart();
+      updatePositions();
+
+      if (Math.random() > 0.8) {
+        aiProb = Math.floor(75 + Math.random() * 20);
+        aiCurrentSignal = Math.random() > 0.4 ? 'COMPRA' : 'VENDI';
+        const badge = document.getElementById('aiSignalBadge');
+        badge.innerText = aiCurrentSignal;
+        badge.className = `signal-badge ${aiCurrentSignal === 'COMPRA' ? 'signal-buy' : 'signal-sell'}`;
+        document.getElementById('probVal').innerText = `${aiProb}%`;
+        document.getElementById('probBar').style.width = `${aiProb}%`;
+
+        if (autoPilot && aiProb > 85) {
+          placeOrder(aiCurrentSignal === 'COMPRA' ? 'BUY' : 'SELL');
         }
+      }
+    }, 1500);
 
-        function drawChart() {
-            canvas.width = canvas.offsetWidth;
-            canvas.height = canvas.offsetHeight;
-            ctx.clearRect(0, 0, canvas.width, canvas.height);
+    function setLot(lot, btn) {
+      selectedLot = lot;
+      document.querySelectorAll('.lot-btn').forEach(b => b.classList.remove('active'));
+      btn.classList.add('active');
+    }
 
-            const min = Math.min(...chartData);
-            const max = Math.max(...chartData);
-            const range = max - min || 1;
+    function placeOrder(type) {
+      const pos = {
+        id: Date.now(),
+        symbol: currentSymbol,
+        type: type,
+        amount: selectedLot,
+        entryPrice: currentPrice,
+        pnl: 0
+      };
+      positions.push(pos);
+      updatePositions();
+    }
 
-            ctx.strokeStyle = '#29b6f6';
-            ctx.lineWidth = 2;
-            ctx.beginPath();
+    function updatePositions() {
+      let totalPnL = 0;
+      const container = document.getElementById('positionsContainer');
 
-            chartData.forEach((val, index) => {
-                const x = (index / (chartData.length - 1)) * canvas.width;
-                const y = canvas.height - ((val - min) / range) * (canvas.height - 20) - 10;
-                if (index === 0) ctx.moveTo(x, y);
-                else ctx.lineTo(x, y);
-            });
+      if (positions.length === 0) {
+        container.innerHTML = `<div style="text-align: center; color: var(--text-sub); font-size: 0.85rem;">Nessuna posizione aperta</div>`;
+      } else {
+        container.innerHTML = positions.map(pos => {
+          const diff = pos.symbol === currentSymbol ? currentPrice - pos.entryPrice : 0;
+          pos.pnl = pos.type === 'BUY' ? diff * pos.amount : -diff * pos.amount;
+          totalPnL += pos.pnl;
+          return `
+            <div class="position-item">
+              <div>
+                <span class="pos-symbol">${pos.symbol}</span>
+                <span class="pos-type ${pos.type.toLowerCase()}">${pos.type} ${pos.amount}</span>
+                <div style="font-size: 0.7rem; color: var(--text-sub); margin-top: 2px;">Entrata: $${pos.entryPrice.toFixed(2)}</div>
+              </div>
+              <div style="text-align: right;">
+                <div class="${pos.pnl >= 0 ? 'pnl-plus' : 'pnl-minus'}" style="font-weight: 700;">${pos.pnl >= 0 ? '+' : ''}$${pos.pnl.toFixed(2)}</div>
+                <button class="btn-close-pos" onclick="closePos(${pos.id})" style="margin-top: 2px;">Chiudi</button>
+              </div>
+            </div>
+          `;
+        }).join('');
+      }
 
-            ctx.stroke();
+      document.getElementById('posCount').innerText = positions.length;
+      document.getElementById('equityVal').innerText = `$${(balance + totalPnL).toLocaleString('en-US', {minimumFractionDigits: 2, maximumFractionDigits: 2})}`;
+      
+      const pnlEl = document.getElementById('pnlVal');
+      pnlEl.innerText = `${totalPnL >= 0 ? '+' : ''}$${totalPnL.toFixed(2)}`;
+      pnlEl.className = `metric-value ${totalPnL >= 0 ? 'pnl-plus' : 'pnl-minus'}`;
+    }
+
+    function closePos(id) {
+      const posIndex = positions.findIndex(p => p.id === id);
+      if (posIndex !== -1) {
+        balance += positions[posIndex].pnl;
+        positions.splice(posIndex, 1);
+        document.getElementById('balanceVal').innerText = `$${balance.toLocaleString('en-US', {minimumFractionDigits: 2, maximumFractionDigits: 2})}`;
+        updatePositions();
+      }
+    }
+
+    function closeAllPositions() {
+      positions.forEach(p => balance += p.pnl);
+      positions = [];
+      document.getElementById('balanceVal').innerText = `$${balance.toLocaleString('en-US', {minimumFractionDigits: 2, maximumFractionDigits: 2})}`;
+      updatePositions();
+    }
+
+    function executeAiTrade() {
+      placeOrder(aiCurrentSignal === 'COMPRA' ? 'BUY' : 'SELL');
+    }
+
+    function toggleAutopilot() {
+      autoPilot = document.getElementById('autopilotCheck').checked;
+    }
+
+    function openModal() {
+      document.getElementById('apiModal').style.display = 'flex';
+    }
+
+    async function saveSettings() {
+      const env = document.getElementById('apiEnv').value;
+      const apiKey = document.getElementById('apiKey').value;
+      const secretKey = document.getElementById('apiSecret').value;
+      const passphrase = document.getElementById('apiPass').value;
+
+      // Salvataggio permanente nel browser
+      localStorage.setItem('apiEnv', env);
+      localStorage.setItem('apiKey', apiKey);
+      localStorage.setItem('apiSecret', secretKey);
+      localStorage.setItem('apiPass', passphrase);
+
+      try {
+        const response = await fetch('/api/config', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ env, apiKey, secretKey, passphrase })
+        });
+        if (response.ok) {
+          document.getElementById('apiModal').style.display = 'none';
+          if (env === 'real') {
+            alert('Configurazione salvata! Connessione al conto Reale OKX stabilita.');
+            if (typeof FetchRealBalance === 'function') FetchRealBalance();
+          } else {
+            alert('Modalità Demo attiva.');
+          }
+        } else {
+          alert('Errore nel salvataggio della configurazione.');
         }
+      } catch (err) {
+        alert('Errore di comunicazione con il server.');
+      }
+    }
 
-        setInterval(() => {
-            const volatility = currentPrice * 0.0005;
-            const change = (Math.random() - 0.49) * volatility;
-            currentPrice += change;
-            basePrices[currentSymbol] = currentPrice;
-            
-            chartData.push(currentPrice);
-            chartData.shift();
+    window.onload = () => {
+      drawChart();
 
-            document.getElementById('livePrice').innerText = `$${currentPrice.toLocaleString('en-US', {minimumFractionDigits: 2, maximumFractionDigits: 2})}`;
-            drawChart();
-            updatePositions();
+      // Ripristino automatico da localStorage
+      const savedEnv = localStorage.getItem('apiEnv');
+      const savedKey = localStorage.getItem('apiKey');
+      const savedSecret = localStorage.getItem('apiSecret');
+      const savedPass = localStorage.getItem('apiPass');
 
-            if (Math.random() > 0.8) {
-                aiProb = Math.floor(75 + Math.random() * 20);
-                aiCurrentSignal = Math.random() > 0.4 ? 'BUY' : 'SELL';
-                
-                const badge = document.getElementById('aiSignalBadge');
-                badge.innerText = aiCurrentSignal === 'BUY' ? 'COMPRA' : 'VENDI';
-                badge.className = `signal-badge ${aiCurrentSignal === 'BUY' ? 'signal-buy' : 'signal-sell'}`;
-                
-                document.getElementById('probVal').innerText = `${aiProb}%`;
-                document.getElementById('probBar').style.width = `${aiProb}%`;
+      if (savedEnv) document.getElementById('apiEnv').value = savedEnv;
+      if (savedKey) document.getElementById('apiKey').value = savedKey;
+      if (savedSecret) document.getElementById('apiSecret').value = savedSecret;
+      if (savedPass) document.getElementById('apiPass').value = savedPass;
 
-                if (autoPilot && aiProb > 85) {
-                    placeOrder(aiCurrentSignal);
-                }
-            }
-        }, 1500);
-
-        function setLot(lot, btn) {
-            selectedLot = lot;
-            document.querySelectorAll('.lot-btn').forEach(b => b.classList.remove('active'));
-            btn.classList.add('active');
-        }
-
-        function placeOrder(type) {
-            const pos = {
-                id: Date.now(),
-                symbol: currentSymbol,
-                type: type,
-                amount: selectedLot,
-                entryPrice: currentPrice,
-                pnl: 0
-            };
-            positions.push(pos);
-            updatePositions();
-        }
-
-        function updatePositions() {
-            let totalPnl = 0;
-            const container = document.getElementById('positionsContainer');
-
-            if (positions.length === 0) {
-                container.innerHTML = `<div style="text-align:center; padding: 15px; color:var(--text-sub); font-size:0.85rem;">Nessuna posizione aperta</div>`;
-            } else {
-                container.innerHTML = positions.map(pos => {
-                    const pairCurrentPrice = basePrices[pos.symbol];
-                    const diff = pairCurrentPrice - pos.entryPrice;
-                    pos.pnl = pos.type === 'BUY' ? (diff * pos.amount) : (-diff * pos.amount);
-                    totalPnl += pos.pnl;
-
-                    const pnlClass = pos.pnl >= 0 ? 'pnl-plus' : 'pnl-minus';
-
-                    return `
-                        <div class="position-item">
-                            <div>
-                                <span class="pos-symbol">${pos.symbol}</span>
-                                <span class="pos-type ${pos.type.toLowerCase()}">${pos.type} ${pos.amount}</span>
-                                <div style="font-size: 0.75rem; color: var(--text-sub); margin-top:2px;">Entrata: $${pos.entryPrice.toFixed(2)}</div>
-                            </div>
-                            <div style="text-align:right;">
-                                <div class="pos-pnl ${pnlClass}">${pos.pnl >= 0 ? '+' : ''}$${pos.pnl.toFixed(2)}</div>
-                                <button class="btn-close-pos" onclick="closePos(${pos.id})" style="margin-top:2px;">Chiudi</button>
-                            </div>
-                        </div>
-                    `;
-                }).join('');
-            }
-
-            document.getElementById('posCount').innerText = positions.length;
-            const equity = balance + totalPnl;
-            document.getElementById('equityVal').innerText = `$${equity.toLocaleString('en-US', {minimumFractionDigits: 2})}`;
-            
-            const pnlElem = document.getElementById('pnlVal');
-            pnlElem.innerText = `${totalPnl >= 0 ? '+' : ''}$${totalPnl.toFixed(2)}`;
-            pnlElem.className = `metric-value ${totalPnl >= 0 ? 'pnl-plus' : 'pnl-minus'}`;
-        }
-
-        function closePos(id) {
-            const posIndex = positions.findIndex(p => p.id === id);
-            if (posIndex !== -1) {
-                balance += positions[posIndex].pnl;
-                positions.splice(posIndex, 1);
-                document.getElementById('balanceVal').innerText = `$${balance.toLocaleString('en-US', {minimumFractionDigits: 2})}`;
-                updatePositions();
-            }
-        }
-
-        function closeAllPositions() {
-            positions.forEach(p => balance += p.pnl);
-            positions = [];
-            document.getElementById('balanceVal').innerText = `$${balance.toLocaleString('en-US', {minimumFractionDigits: 2})}`;
-            updatePositions();
-        }
-
-        function executeAiTrade() {
-            placeOrder(aiCurrentSignal);
-        }
-
-        function toggleAutopilot() {
-            autoPilot = document.getElementById('autopilotCheck').checked;
-        }
-
-        function openModal() { document.getElementById('apiModal').style.display = 'flex'; }
-
-        async function saveSettings() {
-            const env = document.getElementById('apiEnv').value;
-            const apiKey = document.getElementById('apiKey').value;
-            const secretKey = document.getElementById('apiSecret').value;
-            const passphrase = document.getElementById('apiPass').value;
-
-            try {
-                const response = await fetch('/api/config', {
-                    method: 'POST',
-                    headers: { 'Content-Type': 'application/json' },
-                    body: JSON.stringify({ env, apiKey, secretKey, passphrase })
-                });
-                await response.json();
-                
-                document.getElementById('apiModal').style.display = 'none';
-                if(env === 'real') {
-                    alert('Configurazione salvata! Connessione al conto Reale OKX stabilita.');
-                    fetchRealBalance();
-                } else {
-                    alert('Modalità Demo attiva.');
-                    location.reload();
-                }
-            } catch (err) {
-                alert('Errore di comunicazione con il server.');
-            }
-        }
-
-        async function fetchRealBalance() {
-            try {
-                const res = await fetch('/api/balance');
-                const data = await res.json();
-                if(data.real) {
-                    balance = data.balance;
-                    document.getElementById('balanceVal').innerText = `$${balance.toLocaleString('en-US', {minimumFractionDigits: 2})}`;
-                    document.getElementById('equityVal').innerText = `$${balance.toLocaleString('en-US', {minimumFractionDigits: 2})}`;
-                    updatePositions();
-                }
-            } catch (e) {
-                console.log("Impossibile recuperare il saldo reale");
-            }
-        }
-
-        window.onload = () => {
-            drawChart();
-        };
-    </script>
+      if (savedKey) {
+        fetch('/api/config', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ 
+            env: savedEnv || 'demo', 
+            apiKey: savedKey, 
+            secretKey: savedSecret, 
+            passphrase: savedPass 
+          })
+        }).then(() => {
+          if (savedEnv === 'real' && typeof FetchRealBalance === 'function') {
+            FetchRealBalance();
+          }
+        }).catch(err => console.log("Ripristino automatico fallito:", err));
+      }
+    };
+  </script>
 </body>
 </html>
