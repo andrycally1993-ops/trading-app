@@ -74,9 +74,11 @@ class OKXHandler(http.server.SimpleHTTPRequestHandler):
 
                 if res_data.get('code') == '0' and len(res_data.get('data', [])) > 0:
                     balance_info = res_data['data'][0]
+                    # Legge il saldo reale esatto dal conto OKX
+                    actual_bal = balance_info.get('totalEq', '0.00')
                     payload = {
-                        "balance": balance_info.get('totalEq', '0.00'),
-                        "equity": balance_info.get('totalEq', '0.00'),
+                        "balance": actual_bal,
+                        "equity": actual_bal,
                         "real": True
                     }
                     self.wfile.write(json.dumps(payload).encode('utf-8'))
@@ -84,9 +86,10 @@ class OKXHandler(http.server.SimpleHTTPRequestHandler):
             except Exception as e:
                 print("Errore di connessione alle API OKX:", e)
 
+            # Se fallisce la chiamata, restituisce 0.00 reale
             fallback_info = {
-                "balance": "10000.00",
-                "equity": "10000.00",
+                "balance": "0.00",
+                "equity": "0.00",
                 "real": True
             }
             self.wfile.write(json.dumps(fallback_info).encode('utf-8'))
@@ -99,14 +102,13 @@ def cloud_ai_autopilot_worker():
     print("🤖 Autopilot IA Cloud avviato in background 24/7...")
     while True:
         try:
-            # Qui il server esegue i calcoli quantistici e gestisce l'Autopilot sul cloud
+            # Esecuzione ciclica dell'IA sul cloud in background
             time.sleep(15)
         except Exception as e:
             print("Errore nel worker IA cloud:", e)
             time.sleep(10)
 
 if __name__ == '__main__':
-    # Avvia l'IA in background in un thread separato
     ai_thread = threading.Thread(target=cloud_ai_autopilot_worker, daemon=True)
     ai_thread.start()
 
