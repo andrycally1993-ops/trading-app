@@ -1,10 +1,9 @@
-
-      <!DOCTYPE html>
+<!DOCTYPE html>
 <html lang="it">
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>AI OKX Trader Pro - Reale Cloud</title>
+  <title>AI OKX Trader Pro - Reale Cloud (€)</title>
   <style>
     :root {
       --bg-dark: #0f1115;
@@ -271,6 +270,10 @@
     }
     .btn-buy { background: var(--accent-green); }
     .btn-sell { background: var(--accent-red); }
+    .btn-trade:disabled {
+      opacity: 0.4;
+      cursor: not-allowed;
+    }
     .positions-card {
       background: var(--bg-card);
       border-radius: 12px;
@@ -380,15 +383,15 @@
     <div class="metrics-grid">
       <div class="metric-item">
         <span class="metric-label">Balance Reale</span>
-        <span class="metric-value" id="balanceVal">$0.00</span>
+        <span class="metric-value" id="balanceVal">€0.00</span>
       </div>
       <div class="metric-item">
         <span class="metric-label">Equity Reale</span>
-        <span class="metric-value" id="equityVal">$0.00</span>
+        <span class="metric-value" id="equityVal">€0.00</span>
       </div>
       <div class="metric-item">
         <span class="metric-label">P&L Totale</span>
-        <span class="metric-value pnl-plus" id="pnlVal">+$0.00</span>
+        <span class="metric-value" id="pnlVal">€0.00</span>
       </div>
     </div>
   </header>
@@ -412,13 +415,13 @@
         <div class="prob-bar-bg">
           <div id="probBar" class="prob-bar-fill"></div>
         </div>
-        <button class="btn-action-ai" onclick="executeAiTrade()">⚡ ESEGUI CONSIGLIO REALE</button>
+        <button class="btn-action-ai" id="btnAiExec" onclick="executeAiTrade()">⚡ ESEGUI CONSIGLIO REALE</button>
       </div>
 
       <div class="chart-card">
         <div class="chart-header">
           <span style="font-size: 0.85rem; font-weight: 700;" id="chartTitle">Grafico Reale - BTC</span>
-          <span class="live-price" id="livePrice">$80,084.01</span>
+          <span class="live-price" id="livePrice">€80,084.01</span>
         </div>
         <canvas id="chartCanvas"></canvas>
         <div class="trade-controls">
@@ -428,11 +431,11 @@
             <button class="lot-btn" onclick="setLot(0.10, this)">0.10</button>
             <button class="lot-btn" onclick="setLot(0.50, this)">0.50</button>
           </div>
-          <button class="btn-trade btn-sell" onclick="placeOrder('SELL')">
+          <button class="btn-trade btn-sell" id="btnSell" onclick="placeOrder('SELL')">
             <span>VENDI</span>
             <span style="font-size: 0.75rem; opacity: 0.8;">SHORT</span>
           </button>
-          <button class="btn-trade btn-buy" style="grid-column: span 4;" onclick="placeOrder('BUY')">
+          <button class="btn-trade btn-buy" id="btnBuy" style="grid-column: span 4;" onclick="placeOrder('BUY')">
             <span>COMPRA</span>
             <span style="font-size: 0.75rem; opacity: 0.8;">LONG</span>
           </button>
@@ -445,7 +448,7 @@
           <span style="color: var(--accent-red); cursor: pointer;" onclick="closeAllPositions()">Chiudi Tutte</span>
         </div>
         <div id="positionsContainer" style="text-align: center; padding: 15px; color: var(--text-sub); font-size: 0.85rem;">
-          Nessuna posizione aperta
+          ⚠️ Saldo a zero. Deposita su OKX per operare con soldi reali.
         </div>
       </div>
     </div>
@@ -525,11 +528,30 @@
         const data = await res.json();
         if (data.balance) {
           balance = parseFloat(data.balance);
-          document.getElementById('balanceVal').innerText = `$${balance.toLocaleString('en-US', {minimumFractionDigits: 2, maximumFractionDigits: 2})}`;
-          document.getElementById('equityVal').innerText = `$${parseFloat(data.equity || balance).toLocaleString('en-US', {minimumFractionDigits: 2, maximumFractionDigits: 2})}`;
+          document.getElementById('balanceVal').innerText = `€${balance.toLocaleString('it-IT', {minimumFractionDigits: 2, maximumFractionDigits: 2})}`;
+          document.getElementById('equityVal').innerText = `€${parseFloat(data.equity || balance).toLocaleString('it-IT', {minimumFractionDigits: 2, maximumFractionDigits: 2})}`;
         }
       } catch (err) {
         console.log("Errore recupero balance reale:", err);
+      }
+      checkTradingAccess();
+    }
+
+    function checkTradingAccess() {
+      const btnBuy = document.getElementById('btnBuy');
+      const btnSell = document.getElementById('btnSell');
+      const btnAi = document.getElementById('btnAiExec');
+
+      if (balance <= 0) {
+        btnBuy.disabled = true;
+        btnSell.disabled = true;
+        btnAi.disabled = true;
+        btnAi.style.opacity = '0.4';
+      } else {
+        btnBuy.disabled = false;
+        btnSell.disabled = false;
+        btnAi.disabled = false;
+        btnAi.style.opacity = '1';
       }
     }
 
@@ -564,7 +586,7 @@
       chartData.push(currentPrice);
       chartData.shift();
 
-      document.getElementById('livePrice').innerText = `$${currentPrice.toLocaleString('en-US', {minimumFractionDigits: 2, maximumFractionDigits: 2})}`;
+      document.getElementById('livePrice').innerText = `€${currentPrice.toLocaleString('it-IT', {minimumFractionDigits: 2, maximumFractionDigits: 2})}`;
       drawChart();
       updatePositions();
     }, 1500);
@@ -576,6 +598,10 @@
     }
 
     function placeOrder(type) {
+      if (balance <= 0) {
+        alert("Impossibile operare: il saldo reale su OKX è a zero.");
+        return;
+      }
       const pos = {
         id: Date.now(),
         symbol: currentSymbol,
@@ -593,7 +619,11 @@
       const container = document.getElementById('positionsContainer');
 
       if (positions.length === 0) {
-        container.innerHTML = `<div style="text-align: center; color: var(--text-sub); font-size: 0.85rem;">Nessuna posizione aperta</div>`;
+        if (balance <= 0) {
+          container.innerHTML = `<div style="text-align: center; color: var(--accent-red); font-size: 0.85rem;">⚠️ Saldo a zero. Deposita su OKX per operare con soldi reali.</div>`;
+        } else {
+          container.innerHTML = `<div style="text-align: center; color: var(--text-sub); font-size: 0.85rem;">Nessuna posizione aperta</div>`;
+        }
       } else {
         container.innerHTML = positions.map(pos => {
           const diff = pos.symbol === currentSymbol ? currentPrice - pos.entryPrice : 0;
@@ -604,10 +634,10 @@
               <div>
                 <span class="pos-symbol">${pos.symbol}</span>
                 <span class="pos-type ${pos.type.toLowerCase()}">${pos.type} ${pos.amount}</span>
-                <div style="font-size: 0.7rem; color: var(--text-sub); margin-top: 2px;">Entrata: $${pos.entryPrice.toFixed(2)}</div>
+                <div style="font-size: 0.7rem; color: var(--text-sub); margin-top: 2px;">Entrata: €${pos.entryPrice.toFixed(2)}</div>
               </div>
               <div style="text-align: right;">
-                <div class="${pos.pnl >= 0 ? 'pnl-plus' : 'pnl-minus'}" style="font-weight: 700;">${pos.pnl >= 0 ? '+' : ''}$${pos.pnl.toFixed(2)}</div>
+                <div class="${pos.pnl >= 0 ? 'pnl-plus' : 'pnl-minus'}" style="font-weight: 700;">${pos.pnl >= 0 ? '+' : ''}€${pos.pnl.toFixed(2)}</div>
                 <button class="btn-close-pos" onclick="closePos(${pos.id})" style="margin-top: 2px;">Chiudi</button>
               </div>
             </div>
@@ -616,10 +646,10 @@
       }
 
       document.getElementById('posCount').innerText = positions.length;
-      document.getElementById('equityVal').innerText = `$${(balance + totalPnL).toLocaleString('en-US', {minimumFractionDigits: 2, maximumFractionDigits: 2})}`;
+      document.getElementById('equityVal').innerText = `€${(balance + totalPnL).toLocaleString('it-IT', {minimumFractionDigits: 2, maximumFractionDigits: 2})}`;
       
       const pnlEl = document.getElementById('pnlVal');
-      pnlEl.innerText = `${totalPnL >= 0 ? '+' : ''}$${totalPnL.toFixed(2)}`;
+      pnlEl.innerText = `${totalPnL >= 0 ? '+' : ''}€${totalPnL.toFixed(2)}`;
       pnlEl.className = `metric-value ${totalPnL >= 0 ? 'pnl-plus' : 'pnl-minus'}`;
     }
 
@@ -628,7 +658,7 @@
       if (posIndex !== -1) {
         balance += positions[posIndex].pnl;
         positions.splice(posIndex, 1);
-        document.getElementById('balanceVal').innerText = `$${balance.toLocaleString('en-US', {minimumFractionDigits: 2, maximumFractionDigits: 2})}`;
+        document.getElementById('balanceVal').innerText = `€${balance.toLocaleString('it-IT', {minimumFractionDigits: 2, maximumFractionDigits: 2})}`;
         updatePositions();
       }
     }
@@ -636,15 +666,25 @@
     function closeAllPositions() {
       positions.forEach(p => balance += p.pnl);
       positions = [];
-      document.getElementById('balanceVal').innerText = `$${balance.toLocaleString('en-US', {minimumFractionDigits: 2, maximumFractionDigits: 2})}`;
+      document.getElementById('balanceVal').innerText = `€${balance.toLocaleString('it-IT', {minimumFractionDigits: 2, maximumFractionDigits: 2})}`;
       updatePositions();
     }
 
     function executeAiTrade() {
+      if (balance <= 0) {
+        alert("Impossibile eseguire l'Autopilot: il saldo reale su OKX è a zero.");
+        return;
+      }
       placeOrder(aiCurrentSignal === 'COMPRA' ? 'BUY' : 'SELL');
     }
 
     function toggleAutopilot() {
+      if (balance <= 0) {
+        alert("Attenzione: impossibile attivare l'Autopilot con saldo reale a zero.");
+        document.getElementById('autopilotCheck').checked = false;
+        autoPilot = false;
+        return;
+      }
       autoPilot = document.getElementById('autopilotCheck').checked;
     }
 
@@ -681,6 +721,7 @@
 
     window.onload = () => {
       drawChart();
+      checkTradingAccess();
 
       const savedKey = localStorage.getItem('apiKey');
       const savedSecret = localStorage.getItem('apiSecret');
