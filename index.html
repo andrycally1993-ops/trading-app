@@ -1,9 +1,10 @@
-<!DOCTYPE html>
+
+      <!DOCTYPE html>
 <html lang="it">
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>AI OKX Trader Pro</title>
+  <title>AI OKX Trader Pro - Reale Cloud</title>
   <style>
     :root {
       --bg-dark: #0f1115;
@@ -100,12 +101,9 @@
       gap: 12px;
     }
     .tab-content {
-      display: none;
+      display: flex;
       flex-direction: column;
       gap: 12px;
-    }
-    .tab-content.active {
-      display: flex;
     }
     .ai-card {
       background: linear-gradient(135deg, #1e2430 0%, #161a23 100%);
@@ -354,7 +352,7 @@
       display: block;
       margin-bottom: 4px;
     }
-    .form-group input, .form-group select {
+    .form-group input {
       width: 100%;
       padding: 10px;
       background: #111318;
@@ -377,16 +375,16 @@
           <option value="XRP/USDT">XRP/USDT</option>
         </select>
       </div>
-      <button class="api-btn" onclick="openModal()">🔑 API OKX</button>
+      <button class="api-btn" onclick="openModal()">🔑 API OKX (Reale)</button>
     </div>
     <div class="metrics-grid">
       <div class="metric-item">
-        <span class="metric-label">Balance</span>
-        <span class="metric-value" id="balanceVal">$10,000.00</span>
+        <span class="metric-label">Balance Reale</span>
+        <span class="metric-value" id="balanceVal">$0.00</span>
       </div>
       <div class="metric-item">
-        <span class="metric-label">Equity</span>
-        <span class="metric-value" id="equityVal">$10,000.00</span>
+        <span class="metric-label">Equity Reale</span>
+        <span class="metric-value" id="equityVal">$0.00</span>
       </div>
       <div class="metric-item">
         <span class="metric-label">P&L Totale</span>
@@ -396,30 +394,30 @@
   </header>
 
   <main>
-    <div id="tab-trade" class="tab-content active">
+    <div id="tab-trade" class="tab-content">
       <div class="ai-card">
         <div class="ai-header">
-          <span class="ai-title">🤖 MOTORIA PREVISIONALE QUANT</span>
+          <span class="ai-title">🤖 MOTORIA CLOUD 24/7 (REALE)</span>
           <div class="toggle-container">
-            <span>Auto-Pilot</span>
+            <span>Cloud Autopilot</span>
             <label class="switch">
               <input type="checkbox" id="autopilotCheck" onchange="toggleAutopilot()">
               <span class="slider"></span>
             </label>
           </div>
         </div>
-        <div style="font-size: 0.75rem; color: var(--text-sub);">CONSIGLIO ATTUALE:</div>
+        <div style="font-size: 0.75rem; color: var(--text-sub);">CONSIGLIO ATTUALE IA:</div>
         <div id="aiSignalBadge" class="signal-badge signal-buy">COMPRA</div>
         <div style="font-size: 0.75rem; color: var(--text-sub);">Affidabilità Segnale: <span id="probVal">88%</span></div>
         <div class="prob-bar-bg">
           <div id="probBar" class="prob-bar-fill"></div>
         </div>
-        <button class="btn-action-ai" onclick="executeAiTrade()">⚡ ESEGUI CONSIGLIO IA ADESSO</button>
+        <button class="btn-action-ai" onclick="executeAiTrade()">⚡ ESEGUI CONSIGLIO REALE</button>
       </div>
 
       <div class="chart-card">
         <div class="chart-header">
-          <span style="font-size: 0.85rem; font-weight: 700;" id="chartTitle">Grafico Reale (1H) - BTC</span>
+          <span style="font-size: 0.85rem; font-weight: 700;" id="chartTitle">Grafico Reale - BTC</span>
           <span class="live-price" id="livePrice">$80,084.01</span>
         </div>
         <canvas id="chartCanvas"></canvas>
@@ -474,14 +472,7 @@
 
   <div class="modal" id="apiModal">
     <div class="modal-content">
-      <h3 style="margin-bottom: 12px;">🔑 Configurazione OKX</h3>
-      <div class="form-group">
-        <label>Modalità Account</label>
-        <select id="apiEnv">
-          <option value="demo">Demo / Sandbox (Test Sicuro)</option>
-          <option value="real">Reale (Soldi Veri)</option>
-        </select>
-      </div>
+      <h3 style="margin-bottom: 12px;">🔑 Configurazione OKX Reale</h3>
       <div class="form-group">
         <label>API Key OKX</label>
         <input type="text" id="apiKey" placeholder="Inserisci API Key">
@@ -508,7 +499,7 @@
 
     let currentSymbol = 'BTC/USDT';
     let currentPrice = basePrices[currentSymbol];
-    let balance = 10000.00;
+    let balance = 0.00;
     let selectedLot = 0.01;
     let positions = [];
     let autoPilot = false;
@@ -524,8 +515,22 @@
       currentSymbol = select.value;
       currentPrice = basePrices[currentSymbol];
       chartData = Array.from({ length: 30 }, () => currentPrice);
-      document.getElementById('chartTitle').innerText = `Grafico Reale (1H) - ${currentSymbol}`;
+      document.getElementById('chartTitle').innerText = `Grafico Reale - ${currentSymbol}`;
       drawChart();
+    }
+
+    async function fetchRealBalance() {
+      try {
+        const res = await fetch('/api/balance');
+        const data = await res.json();
+        if (data.balance) {
+          balance = parseFloat(data.balance);
+          document.getElementById('balanceVal').innerText = `$${balance.toLocaleString('en-US', {minimumFractionDigits: 2, maximumFractionDigits: 2})}`;
+          document.getElementById('equityVal').innerText = `$${parseFloat(data.equity || balance).toLocaleString('en-US', {minimumFractionDigits: 2, maximumFractionDigits: 2})}`;
+        }
+      } catch (err) {
+        console.log("Errore recupero balance reale:", err);
+      }
     }
 
     function drawChart() {
@@ -562,20 +567,6 @@
       document.getElementById('livePrice').innerText = `$${currentPrice.toLocaleString('en-US', {minimumFractionDigits: 2, maximumFractionDigits: 2})}`;
       drawChart();
       updatePositions();
-
-      if (Math.random() > 0.8) {
-        aiProb = Math.floor(75 + Math.random() * 20);
-        aiCurrentSignal = Math.random() > 0.4 ? 'COMPRA' : 'VENDI';
-        const badge = document.getElementById('aiSignalBadge');
-        badge.innerText = aiCurrentSignal;
-        badge.className = `signal-badge ${aiCurrentSignal === 'COMPRA' ? 'signal-buy' : 'signal-sell'}`;
-        document.getElementById('probVal').innerText = `${aiProb}%`;
-        document.getElementById('probBar').style.width = `${aiProb}%`;
-
-        if (autoPilot && aiProb > 85) {
-          placeOrder(aiCurrentSignal === 'COMPRA' ? 'BUY' : 'SELL');
-        }
-      }
     }, 1500);
 
     function setLot(lot, btn) {
@@ -662,13 +653,10 @@
     }
 
     async function saveSettings() {
-      const env = document.getElementById('apiEnv').value;
       const apiKey = document.getElementById('apiKey').value;
       const secretKey = document.getElementById('apiSecret').value;
       const passphrase = document.getElementById('apiPass').value;
 
-      // Salvataggio permanente nel browser
-      localStorage.setItem('apiEnv', env);
       localStorage.setItem('apiKey', apiKey);
       localStorage.setItem('apiSecret', secretKey);
       localStorage.setItem('apiPass', passphrase);
@@ -677,34 +665,27 @@
         const response = await fetch('/api/config', {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({ env, apiKey, secretKey, passphrase })
+          body: JSON.stringify({ env: 'real', apiKey, secretKey, passphrase })
         });
         if (response.ok) {
           document.getElementById('apiModal').style.display = 'none';
-          if (env === 'real') {
-            alert('Configurazione salvata! Connessione al conto Reale OKX stabilita.');
-            if (typeof FetchRealBalance === 'function') FetchRealBalance();
-          } else {
-            alert('Modalità Demo attiva.');
-          }
+          alert('Configurazione Reale salvata con successo!');
+          fetchRealBalance();
         } else {
-          alert('Errore nel salvataggio della configurazione.');
+          alert('Errore nel salvataggio.');
         }
       } catch (err) {
-        alert('Errore di comunicazione con il server.');
+        alert('Errore di comunicazione col server.');
       }
     }
 
     window.onload = () => {
       drawChart();
 
-      // Ripristino automatico da localStorage
-      const savedEnv = localStorage.getItem('apiEnv');
       const savedKey = localStorage.getItem('apiKey');
       const savedSecret = localStorage.getItem('apiSecret');
       const savedPass = localStorage.getItem('apiPass');
 
-      if (savedEnv) document.getElementById('apiEnv').value = savedEnv;
       if (savedKey) document.getElementById('apiKey').value = savedKey;
       if (savedSecret) document.getElementById('apiSecret').value = savedSecret;
       if (savedPass) document.getElementById('apiPass').value = savedPass;
@@ -713,17 +694,10 @@
         fetch('/api/config', {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({ 
-            env: savedEnv || 'demo', 
-            apiKey: savedKey, 
-            secretKey: savedSecret, 
-            passphrase: savedPass 
-          })
+          body: JSON.stringify({ env: 'real', apiKey: savedKey, secretKey: savedSecret, passphrase: savedPass })
         }).then(() => {
-          if (savedEnv === 'real' && typeof FetchRealBalance === 'function') {
-            FetchRealBalance();
-          }
-        }).catch(err => console.log("Ripristino automatico fallito:", err));
+          fetchRealBalance();
+        }).catch(err => console.log("Ripristino chiavi fallito:", err));
       }
     };
   </script>
