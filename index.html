@@ -72,7 +72,6 @@
             flex-direction: column;
             justify-content: space-between;
         }
-        /* Stile Candele Giapponesi */
         .candles-container {
             display: flex;
             justify-content: space-around;
@@ -185,42 +184,34 @@
     <div class="card">
         <div class="header-row" style="margin-bottom: 4px;">
             <div style="font-weight: bold; font-size: 14px;">🤖 MOTORIA CLOUD 24/7 (REALE)</div>
-            <div style="font-size: 12px; color: #aaa;">Cloud Autopilot <input type="checkbox" checked style="vertical-align: middle;"></div>
+            <div style="font-size: 12px; color: #aaa;">Cloud Autopilot <input type="checkbox" id="autopilotToggle" checked style="vertical-align: middle;"></div>
         </div>
         <div style="font-size: 12px; color: #aaa; margin-bottom: 6px;">CONSIGLIO ATTUALE IA:</div>
-        <div style="background-color: #143824; border: 1px solid #00b894; color: #00b894; padding: 10px; border-radius: 8px; text-align: center; font-weight: bold; font-size: 16px;">COMPRA</div>
+        <div id="aiSignalBox" style="background-color: #143824; border: 1px solid #00b894; color: #00b894; padding: 10px; border-radius: 8px; text-align: center; font-weight: bold; font-size: 16px;">COMPRA</div>
         <div style="font-size: 11px; color: #aaa; margin-top: 6px;">Affidabilità Segnale: 88%</div>
         <div style="background-color: #333; height: 6px; border-radius: 3px; margin-top: 4px; overflow: hidden;">
             <div style="background-color: #00b894; width: 88%; height: 100%;"></div>
         </div>
-        <button class="btn-action">⚡ ESEGUI CONSIGLIO REALE</button>
+        <button id="btnExecuteAi" class="btn-action">⚡ ESEGUI CONSIGLIO REALE</button>
     </div>
 
     <!-- Sezione Grafico a Candele e Operatività -->
     <div class="card">
         <div class="header-row">
-            <span style="font-weight: bold; font-size: 14px;">Grafico Reale - BTC (Candele)</span>
+            <span id="chartTitle" style="font-weight: bold; font-size: 14px;">Grafico Reale - BTC (Candele)</span>
             <span id="priceDisplay" style="font-weight:bold; color:#0098ea; font-size:15px;">€80.088,60</span>
         </div>
         
         <!-- Grafico a Candele Giapponesi -->
         <div class="chart-box">
             <div class="candles-container">
-                <!-- Candela 1 -->
                 <div class="candle"><div class="wick" style="height:50px; top:15px;"></div><div class="body-candle red" style="height:25px; top:28px;"></div></div>
-                <!-- Candela 2 -->
                 <div class="candle"><div class="wick" style="height:65px; top:5px;"></div><div class="body-candle green" style="height:35px; top:20px;"></div></div>
-                <!-- Candela 3 -->
                 <div class="candle"><div class="wick" style="height:45px; top:20px;"></div><div class="body-candle green" style="height:20px; top:30px;"></div></div>
-                <!-- Candela 4 -->
                 <div class="candle"><div class="wick" style="height:70px; top:2px;"></div><div class="body-candle red" style="height:40px; top:15px;"></div></div>
-                <!-- Candela 5 -->
                 <div class="candle"><div class="wick" style="height:55px; top:10px;"></div><div class="body-candle green" style="height:30px; top:22px;"></div></div>
-                <!-- Candela 6 -->
                 <div class="candle"><div class="wick" style="height:80px; top:0px;"></div><div class="body-candle green" style="height:50px; top:10px;"></div></div>
-                <!-- Candela 7 -->
                 <div class="candle"><div class="wick" style="height:60px; top:15px;"></div><div class="body-candle red" style="height:25px; top:28px;"></div></div>
-                <!-- Candela 8 -->
                 <div class="candle"><div class="wick" style="height:50px; top:25px;"></div><div class="body-candle green" style="height:35px; top:30px;"></div></div>
             </div>
             <div style="display: flex; justify-content: space-between; font-size: 10px; color: #888; padding-top: 4px;">
@@ -228,54 +219,145 @@
             </div>
         </div>
 
-        <div class="size-selector">
-            <button class="size-btn active">0.01</button>
-            <button class="size-btn">0.05</button>
-            <button class="size-btn">0.10</button>
-            <button class="size-btn">0.50</button>
+        <div class="size-selector" id="sizeSelector">
+            <button class="size-btn active" data-size="0.01">0.01</button>
+            <button class="size-btn" data-size="0.05">0.05</button>
+            <button class="size-btn" data-size="0.10">0.10</button>
+            <button class="size-btn" data-size="0.50">0.50</button>
         </div>
 
         <div class="trade-buttons">
-            <button class="btn-sell">VENDI SHORT</button>
-            <button class="btn-buy">COMPRA LONG</button>
+            <button id="btnSell" class="btn-sell">VENDI SHORT</button>
+            <button id="btnBuy" class="btn-buy">COMPRA LONG</button>
         </div>
 
         <!-- Sezione Posizioni Aperte -->
         <div class="header-row" style="margin-top: 15px; margin-bottom: 5px;">
-            <span style="font-size: 13px; font-weight: bold;">POSIZIONI APERTE (0)</span>
-            <span style="font-size: 12px; color: #ff4757; cursor: pointer;">Chiudi Tutte</span>
+            <span id="positionsTitle" style="font-size: 13px; font-weight: bold;">POSIZIONI APERTE (0)</span>
+            <span id="btnCloseAll" style="font-size: 12px; color: #ff4757; cursor: pointer;">Chiudi Tutte</span>
         </div>
-        <div class="positions-section" style="text-align: center; padding: 10px; background: #151515; border-radius: 6px;">
+        <div id="positionsContainer" class="positions-section" style="text-align: center; padding: 10px; background: #151515; border-radius: 6px;">
             Nessuna posizione attiva al momento. L'Autopilot è in ascolto.
         </div>
     </div>
 </div>
 
-<!-- SCRIPT DI SINCRONIZZAZIONE SERVER -->
+<!-- SCRIPT DI GESTIONE INTERATTIVA E SERVER -->
 <script>
-async function fetchServerBalance() {
+let selectedSize = "0.01";
+
+// Gestione selezione taglia lotto
+document.querySelectorAll('.size-btn').forEach(btn => {
+    btn.addEventListener('click', (e) => {
+        document.querySelectorAll('.size-btn').forEach(b => b.classList.remove('active'));
+        e.target.classList.add('active');
+        selectedSize = e.target.getAttribute('data-size');
+    });
+});
+
+// Cambio coppia
+document.getElementById('pairSelect').addEventListener('change', (e) => {
+    document.getElementById('chartTitle').innerText = `Grafico Reale - ${e.target.value.split('/')[0]} (Candele)`;
+});
+
+// Funzione invio ordine al server
+async function executeTrade(action) {
+    const pair = document.getElementById('pairSelect').value;
+    const price = document.getElementById('priceDisplay').innerText.replace('€', '').trim();
+    
+    try {
+        const response = await fetch('/api/trade', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ action: action, size: selectedSize, pair: pair, price: price })
+        });
+        const data = await response.json();
+        if (data.status === 'success') {
+            updatePositionsUI(data.positions);
+        }
+    } catch (err) {
+        console.error("Errore esecuzione trade:", err);
+    }
+}
+
+// Pulsante Compra Long
+document.getElementById('btnBuy').addEventListener('click', () => {
+    executeTrade('BUY');
+});
+
+// Pulsante Vendi Short
+document.getElementById('btnSell').addEventListener('click', () => {
+    executeTrade('SELL');
+});
+
+// Pulsante Esegui Consiglio IA
+document.getElementById('btnExecuteAi').addEventListener('click', () => {
+    const signalText = document.getElementById('aiSignalBox').innerText;
+    const action = signalText.includes('COMPRA') ? 'BUY' : 'SELL';
+    executeTrade(action);
+});
+
+// Chiudi tutte le posizioni
+document.getElementById('btnCloseAll').addEventListener('click', async () => {
+    try {
+        const response = await fetch('/api/close_all', { method: 'POST' });
+        const data = await response.json();
+        if (data.status === 'success') {
+            updatePositionsUI(data.positions);
+        }
+    } catch (err) {
+        console.error("Errore chiusura posizioni:", err);
+    }
+});
+
+// Aggiorna interfaccia posizioni e saldo
+async function fetchServerData() {
     try {
         const response = await fetch('/api/balance');
         const data = await response.json();
         
-        if (data && data.balance) {
+        if (data) {
             const balanceEl = document.querySelector('.balance-display');
             const equityEl = document.querySelector('.equity-display');
             
-            if (balanceEl) {
-                balanceEl.innerText = `€${parseFloat(data.balance).toLocaleString('it-IT', {minimumFractionDigits: 2})}`;
-            }
-            if (equityEl) {
-                equityEl.innerText = `€${parseFloat(data.equity || data.balance).toLocaleString('it-IT', {minimumFractionDigits: 2})}`;
+            if (balanceEl) balanceEl.innerText = `€${parseFloat(data.balance || 0).toLocaleString('it-IT', {minimumFractionDigits: 2})}`;
+            if (equityEl) equityEl.innerText = `€${parseFloat(data.equity || data.balance || 0).toLocaleString('it-IT', {minimumFractionDigits: 2})}`;
+            
+            if (data.positions) {
+                updatePositionsUI(data.positions);
             }
         }
     } catch (err) {
-        console.error("Errore nel recupero del saldo dal server:", err);
+        console.error("Errore sincronizzazione server:", err);
     }
 }
 
-setInterval(fetchServerBalance, 10000);
-fetchServerBalance();
+function updatePositionsUI(positions) {
+    const container = document.getElementById('positionsContainer');
+    const title = document.getElementById('positionsTitle');
+    title.innerText = `POSIZIONI APERTE (${positions.length})`;
+
+    if (positions.length === 0) {
+        container.innerHTML = "Nessuna posizione attiva al momento. L'Autopilot è in ascolto.";
+        return;
+    }
+
+    let html = '';
+    positions.forEach(pos => {
+        const color = pos.type === 'BUY' ? '#00b894' : '#d63031';
+        html += `
+            <div style="display: flex; justify-content: space-between; align-items: center; padding: 6px 0; border-bottom: 1px solid #222;">
+                <div><strong>${pos.pair}</strong> <span style="color:${color}; font-weight:bold;">${pos.type}</span> (${pos.size})</div>
+                <div>Ingresso: €${pos.entryPrice} <span style="color:#00b894; margin-left:8px;">${pos.pnl}</span></div>
+            </div>
+        `;
+    });
+    container.innerHTML = html;
+}
+
+// Sincronizzazione continua ogni 5 secondi
+setInterval(fetchServerData, 5000);
+fetchServerData();
 </script>
 
 </body>
