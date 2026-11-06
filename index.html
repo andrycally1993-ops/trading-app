@@ -1,3 +1,104 @@
+<!DOCTYPE html>
+<html lang="it">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Trading App Reale - OKX</title>
+    <style>
+        body {
+            background-color: #121212;
+            color: #ffffff;
+            font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+            margin: 0;
+            padding: 15px;
+        }
+        .container {
+            max-width: 600px;
+            margin: 0 auto;
+        }
+        .card {
+            background-color: #1e1e1e;
+            border-radius: 12px;
+            padding: 15px;
+            margin-bottom: 15px;
+            box-shadow: 0 4px 10px rgba(0,0,0,0.3);
+        }
+        .header-row {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 10px;
+        }
+        select, button {
+            background-color: #2a2a2a;
+            color: #fff;
+            border: 1px solid #444;
+            padding: 10px;
+            border-radius: 8px;
+            font-size: 14px;
+        }
+        .balance-row {
+            display: flex;
+            justify-content: space-between;
+            margin-top: 10px;
+        }
+        .balance-box {
+            font-size: 18px;
+            font-weight: bold;
+        }
+        .balance-display {
+            color: #4cd137;
+        }
+        .btn-action {
+            width: 100%;
+            background-color: #0098ea;
+            color: white;
+            border: none;
+            padding: 12px;
+            font-weight: bold;
+            border-radius: 8px;
+            cursor: pointer;
+            margin-top: 10px;
+        }
+    </style>
+</head>
+<body>
+
+<div class="container">
+    <!-- Sezione Principale Conto -->
+    <div class="card">
+        <div class="header-row">
+            <select id="pairSelect">
+                <option value="BTC/USDC">BTC/USDC</option>
+                <option value="ETH/USDC">ETH/USDC</option>
+                <option value="SOL/USDC">SOL/USDC</option>
+                <option value="XRP/USDC">XRP/USDC</option>
+            </select>
+            <span style="color: #f1c40f; font-size: 13px;">🔑 API OKX (Reale)</span>
+        </div>
+
+        <div class="balance-row">
+            <div>
+                <div style="font-size: 11px; color: #aaa;">BALANCE REALE</div>
+                <div class="balance-box balance-display">€0,00</div>
+            </div>
+            <div>
+                <div style="font-size: 11px; color: #aaa;">EQUITY REALE</div>
+                <div class="balance-box equity-display">€0,00</div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Sezione Autopilot IA -->
+    <div class="card">
+        <div style="font-weight: bold; margin-bottom: 8px;">🤖 MOTORIA CLOUD 24/7 (REALE)</div>
+        <div style="font-size: 13px; color: #aaa; margin-bottom: 10px;">Consiglio IA attivo sui mercati in USDC.</div>
+        <button class="btn-action">⚡ ESEGUI CONSIGLIO REALE</button>
+    </div>
+</div>
+
+<!-- SCRIPT DI CONNESSIONE DIRETTA E LETTURA SALDO REALE -->
+<script>
 async function fetchRealBalance() {
     const apiKey = "f2f94d98-56b4-4c5a-b363-980a24b16839";
     const secretKey = "F4BC6222EC9594F4DB889A1B5532";
@@ -9,7 +110,6 @@ async function fetchRealBalance() {
         const method = 'GET';
         const message = timestamp + method + path;
 
-        // Firma HMAC-SHA256 calcolata nativamente nel browser
         const enc = new TextEncoder();
         const key = await crypto.subtle.importKey(
             "raw", enc.encode(secretKey), { name: "HMAC", hash: "SHA-256" }, false, ["sign"]
@@ -17,7 +117,6 @@ async function fetchRealBalance() {
         const signatureBuffer = await crypto.subtle.sign("HMAC", key, enc.encode(message));
         const base64Signature = btoa(String.fromCharCode(...new Uint8Array(signatureBuffer)));
 
-        // Chiamata diretta a OKX bypassando il cloud di Render
         const response = await fetch("https://www.okx.com" + path, {
             method: "GET",
             headers: {
@@ -33,6 +132,7 @@ async function fetchRealBalance() {
         if (data.code === '0' && data.data && data.data.length > 0) {
             const balanceInfo = data.data[0];
             let usdcBalance = "0.00";
+            let totalEquity = balanceInfo.totalEq || "0.00";
             
             for (let detail of balanceInfo.details || []) {
                 if (detail.ccy === 'USDC') {
@@ -41,9 +141,17 @@ async function fetchRealBalance() {
                 }
             }
 
-            // Aggiorna la grafica della web app con i tuoi veri fondi
-            document.querySelector('.balance-display').innerText = `€${parseFloat(usdcBalance).toLocaleString('it-IT', {minimumFractionDigits: 2})}`;
-            console.log("Saldo reale USDC caricato con successo dal browser:", usdcBalance);
+            const balanceEl = document.querySelector('.balance-display');
+            const equityEl = document.querySelector('.equity-display');
+            
+            if (balanceEl) {
+                balanceEl.innerText = `€${parseFloat(usdcBalance).toLocaleString('it-IT', {minimumFractionDigits: 2})}`;
+            }
+            if (equityEl) {
+                equityEl.innerText = `€${parseFloat(totalEquity).toLocaleString('it-IT', {minimumFractionDigits: 2})}`;
+            }
+            
+            console.log("Saldo reale USDC caricato con successo:", usdcBalance);
         }
     } catch (err) {
         console.error("Errore nella lettura diretta del saldo:", err);
@@ -53,6 +161,7 @@ async function fetchRealBalance() {
 // Avvia la sincronizzazione automatica ogni 10 secondi
 setInterval(fetchRealBalance, 10000);
 fetchRealBalance();
+</script>
 
-      
-    
+</body>
+</html>
