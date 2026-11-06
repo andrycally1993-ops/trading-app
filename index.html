@@ -10,7 +10,7 @@
             color: #ffffff;
             font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
             margin: 0;
-            padding: 15px;
+            padding: 12px;
         }
         .container {
             max-width: 600px;
@@ -19,35 +19,38 @@
         .card {
             background-color: #1e1e1e;
             border-radius: 12px;
-            padding: 15px;
-            margin-bottom: 15px;
+            padding: 12px;
+            margin-bottom: 12px;
             box-shadow: 0 4px 10px rgba(0,0,0,0.3);
         }
         .header-row {
             display: flex;
             justify-content: space-between;
             align-items: center;
-            margin-bottom: 10px;
+            margin-bottom: 8px;
         }
         select, button {
             background-color: #2a2a2a;
             color: #fff;
             border: 1px solid #444;
-            padding: 10px;
+            padding: 8px;
             border-radius: 8px;
             font-size: 14px;
         }
         .balance-row {
             display: flex;
             justify-content: space-between;
-            margin-top: 10px;
+            margin-top: 8px;
         }
         .balance-box {
-            font-size: 18px;
+            font-size: 16px;
             font-weight: bold;
         }
         .balance-display {
             color: #4cd137;
+        }
+        .equity-display {
+            color: #fff;
         }
         .btn-action {
             width: 100%;
@@ -58,7 +61,58 @@
             font-weight: bold;
             border-radius: 8px;
             cursor: pointer;
+            margin-top: 8px;
+        }
+        .chart-box {
+            background-color: #161616;
+            border-radius: 8px;
+            padding: 10px;
+            height: 180px;
+            display: flex;
+            flex-direction: column;
+            justify-content: space-between;
+        }
+        .trade-buttons {
+            display: flex;
+            gap: 10px;
             margin-top: 10px;
+        }
+        .btn-buy {
+            flex: 1;
+            background-color: #00b894;
+            color: white;
+            border: none;
+            padding: 12px;
+            border-radius: 8px;
+            font-weight: bold;
+            cursor: pointer;
+        }
+        .btn-sell {
+            flex: 1;
+            background-color: #d63031;
+            color: white;
+            border: none;
+            padding: 12px;
+            border-radius: 8px;
+            font-weight: bold;
+            cursor: pointer;
+        }
+        .size-selector {
+            display: flex;
+            justify-content: space-between;
+            margin: 8px 0;
+        }
+        .size-btn {
+            background-color: #2a2a2a;
+            border: 1px solid #444;
+            color: #fff;
+            padding: 6px 12px;
+            border-radius: 6px;
+            cursor: pointer;
+        }
+        .size-btn.active {
+            border-color: #0098ea;
+            background-color: #004466;
         }
     </style>
 </head>
@@ -86,14 +140,55 @@
                 <div style="font-size: 11px; color: #aaa;">EQUITY REALE</div>
                 <div class="balance-box equity-display">€0,00</div>
             </div>
+            <div>
+                <div style="font-size: 11px; color: #aaa;">P&L TOTALE</div>
+                <div class="balance-box" style="color: #4cd137;">+€0,00</div>
+            </div>
         </div>
     </div>
 
     <!-- Sezione Autopilot IA -->
     <div class="card">
-        <div style="font-weight: bold; margin-bottom: 8px;">🤖 MOTORIA CLOUD 24/7 (REALE)</div>
-        <div style="font-size: 13px; color: #aaa; margin-bottom: 10px;">Consiglio IA attivo sui mercati in USDC.</div>
+        <div class="header-row" style="margin-bottom: 4px;">
+            <div style="font-weight: bold; font-size: 14px;">🤖 MOTORIA CLOUD 24/7 (REALE)</div>
+            <div style="font-size: 12px; color: #aaa;">Cloud Autopilot <input type="checkbox" checked style="vertical-align: middle;"></div>
+        </div>
+        <div style="font-size: 12px; color: #aaa; margin-bottom: 6px;">CONSIGLIO ATTUALE IA:</div>
+        <div style="background-color: #143824; border: 1px solid #00b894; color: #00b894; padding: 10px; border-radius: 8px; text-align: center; font-weight: bold; font-size: 16px;">COMPRA</div>
+        <div style="font-size: 11px; color: #aaa; margin-top: 6px;">Affidabilità Segnale: 88%</div>
+        <div style="background-color: #333; height: 6px; border-radius: 3px; margin-top: 4px; overflow: hidden;">
+            <div style="background-color: #00b894; width: 88%; height: 100%;"></div>
+        </div>
         <button class="btn-action">⚡ ESEGUI CONSIGLIO REALE</button>
+    </div>
+
+    <!-- Sezione Grafico e Operatività Manuale -->
+    <div class="card">
+        <div class="header-row">
+            <span style="font-weight: bold; font-size: 14px;">Grafico Reale - BTC</span>
+            <span id="priceDisplay" style="font-weight: bold; color: #0098ea; font-size: 15px;">€80.088,60</span>
+        </div>
+        <div class="chart-box">
+            <!-- Semplice canvas o rappresentazione visiva del grafico -->
+            <svg viewBox="0 0 300 100" style="width: 100%; height: 100%;">
+                <path d="M 0,80 Q 50,40 100,60 T 200,30 T 300,70" fill="none" stroke="#0098ea" stroke-width="2"/>
+            </svg>
+            <div style="display: flex; justify-content: space-between; font-size: 10px; color: #666;">
+                <span>12:00</span><span>16:00</span><span>20:00</span><span>00:00</span>
+            </div>
+        </div>
+
+        <div class="size-selector">
+            <button class="size-btn active">0.01</button>
+            <button class="size-btn">0.05</button>
+            <button class="size-btn">0.10</button>
+            <button class="size-btn">0.50</button>
+        </div>
+
+        <div class="trade-buttons">
+            <button class="btn-sell">VENDI SHORT</button>
+            <button class="btn-buy">COMPRA LONG</button>
+        </div>
     </div>
 </div>
 
