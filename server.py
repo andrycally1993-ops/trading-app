@@ -71,13 +71,14 @@ class OKXHandler(http.server.SimpleHTTPRequestHandler):
                 url = 'https://www.okx.com' + path
                 response = requests.get(url, headers=headers, timeout=5)
                 res_data = response.json()
+                
+                # STAMPA LA RISPOSTA DI OKX NEI LOG DI RENDER PER DIAGNOSTICA
+                print("Risposta OKX API:", res_data)
 
                 if res_data.get('code') == '0' and len(res_data.get('data', [])) > 0:
                     balance_info = res_data['data'][0]
-                    # Legge il saldo reale esatto dal conto OKX
                     actual_bal = balance_info.get('totalEq', '0.00')
                     
-                    # Cerca specificamente il disponibile in USDC sul conto reale
                     usdc_avail = "0.00"
                     for detail in balance_info.get('details', []):
                         if detail.get('ccy') == 'USDC':
@@ -92,7 +93,7 @@ class OKXHandler(http.server.SimpleHTTPRequestHandler):
                     self.wfile.write(json.dumps(payload).encode('utf-8'))
                     return
             except Exception as e:
-                print("Errore di connessione alle API OKX:", e)
+                print("Errore dettagliato di connessione OKX:", e)
 
             # Se fallisce la chiamata, restituisce 0.00 reale
             fallback_info = {
