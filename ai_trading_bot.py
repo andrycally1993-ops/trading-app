@@ -98,4 +98,4 @@ if __name__ == "__main__":
             print(f"⚠️ Si è verificato un errore temporaneo: {e}")
         
         print("\n⏳ In attesa del prossimo ciclo (tra 1 ora)...\n")
-        time.sleep(10)  # Pausa di 3600 secondi (1 ora)
+        time.sleep(10)  # Pausa di test (puoi rimettere 3600 per 1 ora)
