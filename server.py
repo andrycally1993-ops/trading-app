@@ -76,8 +76,16 @@ class OKXHandler(http.server.SimpleHTTPRequestHandler):
                     balance_info = res_data['data'][0]
                     # Legge il saldo reale esatto dal conto OKX
                     actual_bal = balance_info.get('totalEq', '0.00')
+                    
+                    # Cerca specificamente il disponibile in USDC sul conto reale
+                    usdc_avail = "0.00"
+                    for detail in balance_info.get('details', []):
+                        if detail.get('ccy') == 'USDC':
+                            usdc_avail = detail.get('availEq', detail.get('cashBal', '0.00'))
+                            break
+
                     payload = {
-                        "balance": actual_bal,
+                        "balance": usdc_avail if float(usdc_avail) > 0 else actual_bal,
                         "equity": actual_bal,
                         "real": True
                     }
@@ -102,7 +110,6 @@ def cloud_ai_autopilot_worker():
     print("🤖 Autopilot IA Cloud avviato in background 24/7...")
     while True:
         try:
-            # Esecuzione ciclica dell'IA sul cloud in background
             time.sleep(15)
         except Exception as e:
             print("Errore nel worker IA cloud:", e)
@@ -112,6 +119,6 @@ if __name__ == '__main__':
     ai_thread = threading.Thread(target=cloud_ai_autopilot_worker, daemon=True)
     ai_thread.start()
 
-    print(f"🚀 Server Python avviato sulla porta {PORT} con IA Cloud integrata (Conto Reale Ffisso).")
+    print(f"🚀 Server Python avviato sulla porta {PORT} con IA Cloud integrata (Conto Reale Fisso).")
     with socketserver.TCPServer(("", PORT), OKXHandler) as httpd:
         httpd.serve_forever()
