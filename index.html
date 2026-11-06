@@ -67,11 +67,40 @@
             background-color: #161616;
             border-radius: 8px;
             padding: 10px;
-            height: 180px;
+            height: 190px;
             display: flex;
             flex-direction: column;
             justify-content: space-between;
         }
+        /* Stile Candele Giapponesi */
+        .candles-container {
+            display: flex;
+            justify-content: space-around;
+            align-items: flex-end;
+            height: 140px;
+            padding-top: 10px;
+            border-bottom: 1px solid #333;
+        }
+        .candle {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            position: relative;
+            width: 12px;
+        }
+        .wick {
+            width: 2px;
+            background-color: #888;
+            position: absolute;
+        }
+        .body-candle {
+            width: 10px;
+            border-radius: 2px;
+            z-index: 2;
+        }
+        .green { background-color: #00b894; }
+        .red { background-color: #d63031; }
+
         .trade-buttons {
             display: flex;
             gap: 10px;
@@ -113,6 +142,11 @@
         .size-btn.active {
             border-color: #0098ea;
             background-color: #004466;
+        }
+        .positions-section {
+            font-size: 13px;
+            color: #aaa;
+            margin-top: 8px;
         }
     </style>
 </head>
@@ -162,19 +196,35 @@
         <button class="btn-action">⚡ ESEGUI CONSIGLIO REALE</button>
     </div>
 
-    <!-- Sezione Grafico e Operatività Manuale -->
+    <!-- Sezione Grafico a Candele e Operatività -->
     <div class="card">
         <div class="header-row">
-            <span style="font-weight: bold; font-size: 14px;">Grafico Reale - BTC</span>
-            <span id="priceDisplay" style="font-weight: bold; color: #0098ea; font-size: 15px;">€80.088,60</span>
+            <span style="font-weight: bold; font-size: 14px;">Grafico Reale - BTC (Candele)</span>
+            <span id="priceDisplay" style="font-weight:bold; color:#0098ea; font-size:15px;">€80.088,60</span>
         </div>
+        
+        <!-- Grafico a Candele Giapponesi -->
         <div class="chart-box">
-            <!-- Semplice canvas o rappresentazione visiva del grafico -->
-            <svg viewBox="0 0 300 100" style="width: 100%; height: 100%;">
-                <path d="M 0,80 Q 50,40 100,60 T 200,30 T 300,70" fill="none" stroke="#0098ea" stroke-width="2"/>
-            </svg>
-            <div style="display: flex; justify-content: space-between; font-size: 10px; color: #666;">
-                <span>12:00</span><span>16:00</span><span>20:00</span><span>00:00</span>
+            <div class="candles-container">
+                <!-- Candela 1 -->
+                <div class="candle"><div class="wick" style="height:50px; top:15px;"></div><div class="body-candle red" style="height:25px; top:28px;"></div></div>
+                <!-- Candela 2 -->
+                <div class="candle"><div class="wick" style="height:65px; top:5px;"></div><div class="body-candle green" style="height:35px; top:20px;"></div></div>
+                <!-- Candela 3 -->
+                <div class="candle"><div class="wick" style="height:45px; top:20px;"></div><div class="body-candle green" style="height:20px; top:30px;"></div></div>
+                <!-- Candela 4 -->
+                <div class="candle"><div class="wick" style="height:70px; top:2px;"></div><div class="body-candle red" style="height:40px; top:15px;"></div></div>
+                <!-- Candela 5 -->
+                <div class="candle"><div class="wick" style="height:55px; top:10px;"></div><div class="body-candle green" style="height:30px; top:22px;"></div></div>
+                <!-- Candela 6 -->
+                <div class="candle"><div class="wick" style="height:80px; top:0px;"></div><div class="body-candle green" style="height:50px; top:10px;"></div></div>
+                <!-- Candela 7 -->
+                <div class="candle"><div class="wick" style="height:60px; top:15px;"></div><div class="body-candle red" style="height:25px; top:28px;"></div></div>
+                <!-- Candela 8 -->
+                <div class="candle"><div class="wick" style="height:50px; top:25px;"></div><div class="body-candle green" style="height:35px; top:30px;"></div></div>
+            </div>
+            <div style="display: flex; justify-content: space-between; font-size: 10px; color: #888; padding-top: 4px;">
+                <span>12:00</span><span>15:00</span><span>18:00</span><span>21:00</span><span>00:00</span>
             </div>
         </div>
 
@@ -189,73 +239,43 @@
             <button class="btn-sell">VENDI SHORT</button>
             <button class="btn-buy">COMPRA LONG</button>
         </div>
+
+        <!-- Sezione Posizioni Aperte -->
+        <div class="header-row" style="margin-top: 15px; margin-bottom: 5px;">
+            <span style="font-size: 13px; font-weight: bold;">POSIZIONI APERTE (0)</span>
+            <span style="font-size: 12px; color: #ff4757; cursor: pointer;">Chiudi Tutte</span>
+        </div>
+        <div class="positions-section" style="text-align: center; padding: 10px; background: #151515; border-radius: 6px;">
+            Nessuna posizione attiva al momento. L'Autopilot è in ascolto.
+        </div>
     </div>
 </div>
 
-<!-- SCRIPT DI CONNESSIONE DIRETTA E LETTURA SALDO REALE -->
+<!-- SCRIPT DI SINCRONIZZAZIONE SERVER -->
 <script>
-async function fetchRealBalance() {
-    const apiKey = "f2f94d98-56b4-4c5a-b363-980a24b16839";
-    const secretKey = "F4BC6222EC9594F4DB889A1B5532";
-    const passphrase = "King_9396";
-
+async function fetchServerBalance() {
     try {
-        const timestamp = new Date().toISOString();
-        const path = '/api/v5/account/balance';
-        const method = 'GET';
-        const message = timestamp + method + path;
-
-        const enc = new TextEncoder();
-        const key = await crypto.subtle.importKey(
-            "raw", enc.encode(secretKey), { name: "HMAC", hash: "SHA-256" }, false, ["sign"]
-        );
-        const signatureBuffer = await crypto.subtle.sign("HMAC", key, enc.encode(message));
-        const base64Signature = btoa(String.fromCharCode(...new Uint8Array(signatureBuffer)));
-
-        const response = await fetch("https://www.okx.com" + path, {
-            method: "GET",
-            headers: {
-                "OK-ACCESS-KEY": apiKey,
-                "OK-ACCESS-SIGN": base64Signature,
-                "OK-ACCESS-TIMESTAMP": timestamp,
-                "OK-ACCESS-PASSPHRASE": passphrase,
-                "Content-Type": "application/json"
-            }
-        });
-
+        const response = await fetch('/api/balance');
         const data = await response.json();
-        if (data.code === '0' && data.data && data.data.length > 0) {
-            const balanceInfo = data.data[0];
-            let usdcBalance = "0.00";
-            let totalEquity = balanceInfo.totalEq || "0.00";
-            
-            for (let detail of balanceInfo.details || []) {
-                if (detail.ccy === 'USDC') {
-                    usdcBalance = detail.availEq || detail.cashBal || "0.00";
-                    break;
-                }
-            }
-
+        
+        if (data && data.balance) {
             const balanceEl = document.querySelector('.balance-display');
             const equityEl = document.querySelector('.equity-display');
             
             if (balanceEl) {
-                balanceEl.innerText = `€${parseFloat(usdcBalance).toLocaleString('it-IT', {minimumFractionDigits: 2})}`;
+                balanceEl.innerText = `€${parseFloat(data.balance).toLocaleString('it-IT', {minimumFractionDigits: 2})}`;
             }
             if (equityEl) {
-                equityEl.innerText = `€${parseFloat(totalEquity).toLocaleString('it-IT', {minimumFractionDigits: 2})}`;
+                equityEl.innerText = `€${parseFloat(data.equity || data.balance).toLocaleString('it-IT', {minimumFractionDigits: 2})}`;
             }
-            
-            console.log("Saldo reale USDC caricato con successo:", usdcBalance);
         }
     } catch (err) {
-        console.error("Errore nella lettura diretta del saldo:", err);
+        console.error("Errore nel recupero del saldo dal server:", err);
     }
 }
 
-// Avvia la sincronizzazione automatica ogni 10 secondi
-setInterval(fetchRealBalance, 10000);
-fetchRealBalance();
+setInterval(fetchServerBalance, 10000);
+fetchServerBalance();
 </script>
 
 </body>
