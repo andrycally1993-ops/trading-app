@@ -22,7 +22,7 @@ def calcola_rsi(serie, periodo=14):
     return 100 - (100 / (1 + rs))
 
 def esegui_trading_automatico():
-    symbol = 'BTC/USDC'
+    symbol = 'BTC/USDT'
     print(f"\n--- Avvio analisi avanzata con IA e Multi-Indicatori per {symbol} ---")
     
     # Prezzo corrente in tempo reale
