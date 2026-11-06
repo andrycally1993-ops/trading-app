@@ -1,4 +1,4 @@
-import http.server
+  import http.server
 import socketserver
 import hmac
 import hashlib
@@ -69,11 +69,12 @@ class OKXHandler(http.server.SimpleHTTPRequestHandler):
                 }
 
                 url = 'https://www.okx.com' + path
-                response = requests.get(url, headers=headers, timeout=5)
-                res_data = response.json()
+                print("Invio richiesta a OKX URL:", url)
+                response = requests.get(url, headers=headers, timeout=10)
+                print("Codice di stato HTTP ricevuto da OKX:", response.status_code)
                 
-                # STAMPA LA RISPOSTA DI OKX NEI LOG DI RENDER PER DIAGNOSTICA
-                print("Risposta OKX API:", res_data)
+                res_data = response.json()
+                print("Risposta OKX API (JSON):", res_data)
 
                 if res_data.get('code') == '0' and len(res_data.get('data', [])) > 0:
                     balance_info = res_data['data'][0]
@@ -93,7 +94,7 @@ class OKXHandler(http.server.SimpleHTTPRequestHandler):
                     self.wfile.write(json.dumps(payload).encode('utf-8'))
                     return
             except Exception as e:
-                print("Errore dettagliato di connessione OKX:", e)
+                print("ERRORE CRITICO NELLA CHIAMATA A OKX:", str(e))
 
             # Se fallisce la chiamata, restituisce 0.00 reale
             fallback_info = {
