@@ -15,7 +15,7 @@ PORT = 8000
 API_KEY = "f2f94d98-56b4-4c5a-b363-980a24b16839"
 SECRET_KEY = "F4BC6222EC9594F4DB889A1B5532"
 PASSPHRASE = "King_9396"
-USE_REAL = True  # Fisso su Reale
+USE_REAL = True
 
 class OKXHandler(http.server.SimpleHTTPRequestHandler):
     def do_POST(self):
@@ -32,7 +32,6 @@ class OKXHandler(http.server.SimpleHTTPRequestHandler):
                     SECRET_KEY = data.get('secretKey', '').strip()
                     PASSPHRASE = data.get('passphrase', '').strip()
 
-                print(f"--> CONFIGURAZIONE AGGIORNATA REALE! API: {API_KEY[:6]}...")
                 self.send_response(200)
                 self.send_header('Content-Type', 'application/json')
                 self.end_headers()
@@ -72,6 +71,7 @@ class OKXHandler(http.server.SimpleHTTPRequestHandler):
                 response = requests.get(url, headers=headers, timeout=8)
                 res_data = response.json()
 
+                # Se OKX risponde correttamente con codice '0'
                 if res_data.get('code') == '0' and len(res_data.get('data', [])) > 0:
                     balance_info = res_data['data'][0]
                     actual_bal = balance_info.get('totalEq', '0.00')
@@ -83,48 +83,42 @@ class OKXHandler(http.server.SimpleHTTPRequestHandler):
                             break
 
                     final_balance = usdc_avail if float(usdc_avail) > 0 else actual_bal
-                    
-                    # Se il saldo letto da OKX è maggiore di zero, lo restituisce subito
-                    if float(final_balance) > 0:
-                        payload = {
-                            "balance": final_balance,
-                            "equity": actual_bal,
-                            "real": True
-                        }
-                        self.wfile.write(json.dumps(payload).encode('utf-8'))
-                        return
 
+                    payload = {
+                        "balance": final_balance,
+                        "equity": actual_bal,
+                        "real": True
+                    }
+                    self.wfile.write(json.dumps(payload).encode('utf-8'))
+                    return
+                else:
+                    print("Errore restituito dalle API di OKX:", res_data)
             except Exception as e:
-                print("Nota di connessione OKX (gestita):", e)
+                print("Eccezione nella richiesta a OKX:", e)
 
-            # FALLBACK INTELLIGENTE: Se OKX risponde a zero o blocca l'IP dal cloud,
-            # sblocchiamo l'operatività reale e l'Autopilot caricando un valore di lavoro di default o sincronizzato.
-            # (Puoi modificarlo se desideri un importo specifico visivo immediato)
-            active_payload = {
-                "balance": "1050.00",
-                "equity": "1050.00",
+            # Se le API falliscono o non rispondono, restituisce 0.00 effettivo anziché valori fittizi
+            fallback_info = {
+                "balance": "0.00",
+                "equity": "0.00",
                 "real": True
             }
-            self.wfile.write(json.dumps(active_payload).encode('utf-8'))
+            self.wfile.write(json.dumps(fallback_info).encode('utf-8'))
             return
 
         super().do_GET()
 
-# MOTORIA PREVISIONALE E AUTOPILOT SUL CLOUD 24/7
 def cloud_ai_autopilot_worker():
-    print("🤖 Autopilot IA Cloud avviato in background 24/7 sui mercati reali...")
+    print("🤖 Autopilot IA Cloud avviato in background 24/7...")
     while True:
         try:
-            # L'intelligenza artificiale elabora i segnali in background
             time.sleep(15)
         except Exception as e:
-            print("Errore nel worker IA cloud:", e)
+            print("Errore nel worker IA:", e)
             time.sleep(10)
 
 if __name__ == '__main__':
     ai_thread = threading.Thread(target=cloud_ai_autopilot_worker, daemon=True)
     ai_thread.start()
 
-    print(f"🚀 Server Python avviato sulla porta {PORT} con IA Cloud integrata e sblocco Reale.")
     with socketserver.TCPServer(("", PORT), OKXHandler) as httpd:
         httpd.serve_forever()
