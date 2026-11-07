@@ -167,11 +167,11 @@
         <div class="balance-row">
             <div>
                 <div style="font-size: 11px; color: #aaa;">BALANCE REALE</div>
-                <div class="balance-box balance-display">Caricamento...</div>
+                <div class="balance-box balance-display">€0,00</div>
             </div>
             <div>
                 <div style="font-size: 11px; color: #aaa;">EQUITY REALE</div>
-                <div class="balance-box equity-display">Caricamento...</div>
+                <div class="balance-box equity-display">€0,00</div>
             </div>
             <div>
                 <div style="font-size: 11px; color: #aaa;">P&L TOTALE</div>
@@ -190,7 +190,7 @@
         <div id="aiSignalBox" style="background-color: #143824; border: 1px solid #00b894; color: #00b894; padding: 10px; border-radius: 8px; text-align: center; font-weight: bold; font-size: 16px;">COMPRA</div>
         <div style="font-size: 11px; color: #aaa; margin-top: 6px;">Affidabilità Segnale: <span id="reliabilityText">88%</span></div>
         <div style="background-color: #333; height: 6px; border-radius: 3px; margin-top: 4px; overflow: hidden;">
-            <div id="reliabilityBar" style="background-color: #00b894; width: 88%; height: 100%; transition: width 0.5s;"></div>
+            <div id="reliabilityBar" style="background-color: #00b894; width: 88%; height: 100%;"></div>
         </div>
         <button id="btnExecuteAi" class="btn-action">⚡ ESEGUI CONSIGLIO REALE</button>
     </div>
@@ -202,7 +202,6 @@
             <span id="priceDisplay" style="font-weight:bold; color:#0098ea; font-size:15px;">€80.088,60</span>
         </div>
         
-        <!-- Grafico a Candele Dinamiche -->
         <div class="chart-box">
             <div class="candles-container" id="candlesContainer"></div>
             <div style="display: flex; justify-content: space-between; font-size: 10px; color: #888; padding-top: 4px;">
@@ -222,7 +221,6 @@
             <button id="btnBuy" class="btn-buy">COMPRA LONG</button>
         </div>
 
-        <!-- Sezione Posizioni Aperte -->
         <div class="header-row" style="margin-top: 15px; margin-bottom: 5px;">
             <span id="positionsTitle" style="font-size: 13px; font-weight: bold;">POSIZIONI APERTE (0)</span>
             <span id="btnCloseAll" style="font-size: 12px; color: #ff4757; cursor: pointer;">Chiudi Tutte</span>
@@ -233,18 +231,12 @@
     </div>
 </div>
 
-<!-- SCRIPT COMPLETO DI CONNESSIONE E TRADING -->
 <script>
-const apiKey = "f2f94d98-56b4-4c5a-b363-980a24b16839";
-const secretKey = "F4BC6222EC9594F4DB889A1B5532";
-const passphrase = "King_9396";
-
 let selectedSize = "0.01";
 let activePositions = [];
 let currentPair = "BTC/USDC";
 let basePrice = 80088.60;
 
-// Selezione taglia lotto
 document.querySelectorAll('.size-btn').forEach(btn => {
     btn.addEventListener('click', (e) => {
         document.querySelectorAll('.size-btn').forEach(b => b.classList.remove('active'));
@@ -253,7 +245,6 @@ document.querySelectorAll('.size-btn').forEach(btn => {
     });
 });
 
-// Cambio coppia
 document.getElementById('pairSelect').addEventListener('change', (e) => {
     currentPair = e.target.value;
     const coin = currentPair.split('/')[0];
@@ -264,7 +255,6 @@ document.getElementById('pairSelect').addEventListener('change', (e) => {
     else basePrice = 80088.60;
 });
 
-// Generazione candele
 function renderCandles() {
     const container = document.getElementById('candlesContainer');
     let html = '';
@@ -272,60 +262,24 @@ function renderCandles() {
         const randomHeight = Math.floor(Math.random() * 40) + 20;
         const randomTop = Math.floor(Math.random() * 30) + 15;
         const isGreen = Math.random() > 0.4;
-        const colorClass = isGreen ? 'green' : 'red';
-        html += `<div class="candle"><div class="wick" style="height:${randomHeight+30}px; top:${randomTop-10}px;"></div><div class="body-candle ${colorClass}" style="height:${randomHeight}px; top:${randomTop}px;"></div></div>`;
+        html += `<div class="candle"><div class="wick" style="height:${randomHeight+30}px; top:${randomTop-10}px;"></div><div class="body-candle ${isGreen ? 'green' : 'red'}" style="height:${randomHeight}px; top:${randomTop}px;"></div></div>`;
     }
     container.innerHTML = html;
 }
 
-// Lettura diretta saldo reale OKX dal browser
-async function fetchRealBalance() {
+async function fetchBalance() {
     try {
-        const timestamp = new Date().toISOString();
-        const path = '/api/v5/account/balance';
-        const method = 'GET';
-        const message = timestamp + method + path;
-
-        const enc = new TextEncoder();
-        const key = await crypto.subtle.importKey(
-            "raw", enc.encode(secretKey), { name: "HMAC", hash: "SHA-256" }, false, ["sign"]
-        );
-        const signatureBuffer = await crypto.subtle.sign("HMAC", key, enc.encode(message));
-        const base64Signature = btoa(String.fromCharCode(...new Uint8Array(signatureBuffer)));
-
-        const response = await fetch("https://www.okx.com" + path, {
-            method: "GET",
-            headers: {
-                "OK-ACCESS-KEY": apiKey,
-                "OK-ACCESS-SIGN": base64Signature,
-                "OK-ACCESS-TIMESTAMP": timestamp,
-                "OK-ACCESS-PASSPHRASE": passphrase,
-                "Content-Type": "application/json"
-            }
-        });
-
+        const response = await fetch('/api/balance');
         const data = await response.json();
-        if (data.code === '0' && data.data && data.data.length > 0) {
-            const balanceInfo = data.data[0];
-            let usdcBalance = "0.00";
-            let totalEquity = balanceInfo.totalEq || "0.00";
-            
-            for (let detail of balanceInfo.details || []) {
-                if (detail.ccy === 'USDC') {
-                    usdcBalance = detail.availEq || detail.cashBal || "0.00";
-                    break;
-                }
-            }
-
-            document.querySelector('.balance-display').innerText = `€${parseFloat(usdcBalance).toLocaleString('it-IT', {minimumFractionDigits: 2})}`;
-            document.querySelector('.equity-display').innerText = `€${parseFloat(totalEquity).toLocaleString('it-IT', {minimumFractionDigits: 2})}`;
+        if (data) {
+            document.querySelector('.balance-display').innerText = `€${parseFloat(data.balance || 0).toLocaleString('it-IT', {minimumFractionDigits: 2})}`;
+            document.querySelector('.equity-display').innerText = `€${parseFloat(data.equity || data.balance || 0).toLocaleString('it-IT', {minimumFractionDigits: 2})}`;
         }
     } catch (err) {
-        console.error("Errore lettura saldo:", err);
+        console.error("Errore fetch saldo:", err);
     }
 }
 
-// Aggiornamento Prezzo Live e Candele
 function updateMarketData() {
     const fluctuation = (Math.random() - 0.48) * (basePrice * 0.0005);
     basePrice += fluctuation;
@@ -350,7 +304,6 @@ function updateMarketData() {
     }
 }
 
-// Esecuzione Trade
 function executeTrade(action) {
     const newPos = {
         id: Date.now(),
@@ -366,12 +319,10 @@ function executeTrade(action) {
 
 document.getElementById('btnBuy').addEventListener('click', () => executeTrade('BUY'));
 document.getElementById('btnSell').addEventListener('click', () => executeTrade('SELL'));
-
 document.getElementById('btnExecuteAi').addEventListener('click', () => {
     const signal = document.getElementById('aiSignalBox').innerText;
     executeTrade(signal.includes('COMPRA') ? 'BUY' : 'SELL');
 });
-
 document.getElementById('btnCloseAll').addEventListener('click', () => {
     activePositions = [];
     document.getElementById('pnlDisplay').innerText = "+€0,00";
@@ -393,21 +344,19 @@ function updatePositionsUI() {
     activePositions.forEach(pos => {
         const color = pos.type === 'BUY' ? '#00b894' : '#d63031';
         const pnlStr = `${pos.pnlValue >= 0 ? '+' : ''}€${pos.pnlValue.toFixed(2)}`;
-        const pnlColor = pos.pnlValue >= 0 ? '#00b894' : '#ff4757';
         html += `
             <div style="display: flex; justify-content: space-between; align-items: center; padding: 6px 0; border-bottom: 1px solid #222;">
                 <div><strong>${pos.pair}</strong> <span style="color:${color}; font-weight:bold;">${pos.type}</span> (${pos.size})</div>
-                <div>Ingresso: €${pos.entryPrice.toFixed(2)} <span style="color:${pnlColor}; margin-left:8px; font-weight:bold;">${pnlStr}</span></div>
+                <div>Ingresso: €${pos.entryPrice.toFixed(2)} <span style="color:${pos.pnlValue >= 0 ? '#00b894' : '#ff4757'}; margin-left:8px; font-weight:bold;">${pnlStr}</span></div>
             </div>
         `;
     });
     container.innerHTML = html;
 }
 
-// Avvio cicli
 renderCandles();
-fetchRealBalance();
-setInterval(fetchRealBalance, 10000);
+fetchBalance();
+setInterval(fetchBalance, 10000);
 setInterval(updateMarketData, 2000);
 </script>
 
