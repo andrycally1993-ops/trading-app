@@ -11,9 +11,9 @@ import time
 
 PORT = 8000
 
-# Le tue credenziali reali
-API_KEY = "f2f94d98-56b4-4c5a-b363-980a24b16839"
-SECRET_KEY = "F4BC6222EC9594F4DB889A1B5532"
+# NUOVE CREDENZIALI OKX INSERITE
+API_KEY = "de72399a-4c79-4680-baff-6a73e3658035"
+SECRET_KEY = "EA7DD247EE4BB2B81E84C4DF4B6BDE72"
 PASSPHRASE = "King_9396"
 
 class OKXHandler(http.server.SimpleHTTPRequestHandler):
@@ -66,7 +66,7 @@ class OKXHandler(http.server.SimpleHTTPRequestHandler):
             except Exception as e:
                 print("Errore connessione OKX da server:", e)
 
-            # Fallback di cortesia per sbloccare la visualizzazione se la chiamata viene filtrata
+            # Fallback nel caso in cui la chiamata richieda un attimo
             fallback = {
                 "balance": "0.00",
                 "equity": "0.00",
