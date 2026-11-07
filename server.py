@@ -11,7 +11,8 @@ import threading
 import time
 import urllib.parse
 
-PORT = 8000
+# Lettura della porta assegnata da Render (o 8000 di default)
+PORT = int(os.environ.get('PORT', 8000))
 
 # Lettura delle credenziali dalle variabili d'ambiente
 API_KEY = os.environ.get('API_KEY')
@@ -65,6 +66,6 @@ class OKXHandler(http.server.SimpleHTTPRequestHandler):
         self.end_headers()
 
 if __name__ == '__main__':
-    with socketserver.TCPServer(("", PORT), OKXHandler) as httpd:
+    with socketserver.TCPServer(("0.0.0.0", PORT), OKXHandler) as httpd:
         print(f"Server in ascolto sulla porta {PORT}")
         httpd.serve_forever()
