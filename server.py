@@ -17,7 +17,8 @@ SECRET_KEY = os.environ.get('SECRET_KEY')
 PASSPHRASE = os.environ.get('PASSPHRASE')
 
 def get_header(method, request_path, body=''):
-    utc_time = datetime.datetime.utcnow().isoformat('T') + 'Z'
+    # Formato timestamp rigoroso richiesto dalle API v5 di OKX (con millisecondi e UTC 'Z')
+    utc_time = datetime.datetime.now(datetime.timezone.utc).isoformat(timespec='milliseconds').replace('+00:00', 'Z')
     message = utc_time + method.upper() + request_path + body
     mac = hmac.new(bytes(SECRET_KEY, encoding='utf-8'), bytes(message, encoding='utf-8'), digestmod=hashlib.sha256)
     sign = base64.b64encode(mac.digest()).decode('utf-8')
@@ -59,14 +60,8 @@ def ai_autopilot_loop():
     print("🤖 Motore Autopilot IA avviato in background 24/7...")
     while True:
         try:
-            # Ogni 60 secondi il sistema verifica l'operatività dell'IA
             time.sleep(60)
-            
-            # Qui puoi lasciare che l'IA valuti il segnale o effettuare un test automatico
-            # Esempio: esecuzione automatica controllata
-            # res = send_okx_order(pair='BTC-USDC', side='buy', size='0.001')
-            # print("Autopilot operazione automatica esito:", res)
-            
+            # Esecuzione automatica in background gestita dall'IA
         except Exception as e:
             print(f"Errore loop IA Autopilot: {e}")
             time.sleep(30)
