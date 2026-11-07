@@ -19,7 +19,7 @@ PASSPHRASE = "King_939625"
 PORT = int(os.environ.get('PORT', 10000))
 
 def get_header(method, request_path, body=''):
-    """Genera le firme crittografiche per il conto reale di OKX"""
+    """Genera le firme crittografiche per OKX"""
     try:
         iso = datetime.datetime.now(datetime.timezone.utc).strftime('%Y-%m-%dT%H:%M:%S.%f')[:-3] + 'Z'
         message = iso + method.upper() + request_path + body
@@ -32,7 +32,7 @@ def get_header(method, request_path, body=''):
             "OK-ACCESS-TIMESTAMP": iso,
             "OK-ACCESS-PASSPHRASE": PASSPHRASE,
             "Content-Type": "application/json",
-            "x-simulated-trading": "0"  # Forza l'ambiente REALE
+            "x-simulated-trading": "0"
         }
     except Exception as e:
         print(f"Errore generazione header: {e}")
@@ -113,10 +113,20 @@ class OKHandler(http.server.SimpleHTTPRequestHandler):
 
                 res_okx = okx_request('POST', '/api/v5/trade/order', okx_req_json)
 
+                # Controllo di sicurezza: se OKX dovesse dare ancora problemi di chiave, 
+                # evitiamo di bloccare l'interfaccia e registriamo l'esito pulito
                 if res_okx.get('code') == '0':
                     response_data = {"success": True, "data": res_okx.get('data')}
                 else:
-                    response_data = {"success": False, "error": f"Errore esecuzione OKX: {res_okx.get('msg')}"}
+                    err_msg = res_okx.get('msg', 'Errore sconosciuto')
+                    # Fallback protettivo per non bloccare il tuo lavoro di test
+                    if "API key doesn't exist" in err_msg:
+                        response_data = {
+                            "success": False, 
+                            "error": "Verifica su OKX se la chiave richiede restrizione IP o se appartiene a un Sub-Account."
+                        }
+                    else:
+                        response_data = {"success": False, "error": f"Errore OKX: {err_msg}"}
             except Exception as e:
                 response_data = {"success": False, "error": str(e)}
 
