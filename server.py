@@ -45,7 +45,6 @@ class OKXHandler(http.server.SimpleHTTPRequestHandler):
             self.end_headers()
             
             try:
-                # Esempio di chiamata di test per recuperare il saldo da OKX
                 request_path = '/api/v5/account/balance'
                 url = 'https://www.okx.com' + request_path
                 headers = get_header('GET', request_path)
@@ -57,6 +56,31 @@ class OKXHandler(http.server.SimpleHTTPRequestHandler):
                 self.wfile.write(error_response.encode('utf-8'))
         else:
             super().do_GET()
+
+    def do_POST(self):
+        if self.path == '/api/trade':
+            self.send_response(200)
+            self.send_header('Content-Type', 'application/json')
+            self.send_header('Access-Control-Allow-Origin', '*')
+            self.end_headers()
+            
+            try:
+                # Legge i dati dell'ordine inviati dalla web app
+                content_length = int(self.headers.get('Content-Length', 0))
+                body = self.rfile.read(content_length).decode('utf-8') if content_length > 0 else '{}'
+                
+                request_path = '/api/v5/trade/order'
+                url = 'https://www.okx.com' + request_path
+                headers = get_header('POST', request_path, body)
+                
+                response = requests.post(url, headers=headers, data=body)
+                self.wfile.write(response.content)
+            except Exception as e:
+                error_response = json.dumps({"error": str(e)})
+                self.wfile.write(error_response.encode('utf-8'))
+        else:
+            self.send_response(404)
+            self.end_headers()
 
     def do_OPTIONS(self):
         self.send_response(200)
