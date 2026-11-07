@@ -7,19 +7,14 @@ import base64
 import datetime
 import requests
 import json
-import threading
-import time
 import urllib.parse
 
-# Lettura della porta assegnata da Render (o 8000 di default)
 PORT = int(os.environ.get('PORT', 8000))
 
-# Lettura delle credenziali dalle variabili d'ambiente
 API_KEY = os.environ.get('API_KEY')
 SECRET_KEY = os.environ.get('SECRET_KEY')
 PASSPHRASE = os.environ.get('PASSPHRASE')
 
-# Funzione per firmare le richieste API per OKX (Live Trading)
 def get_header(method, request_path, body=''):
     utc_time = datetime.datetime.utcnow().isoformat('T') + 'Z'
     message = utc_time + method.upper() + request_path + body
@@ -31,7 +26,7 @@ def get_header(method, request_path, body=''):
         'OK-ACCESS-SIGN': sign,
         'OK-ACCESS-TIMESTAMP': utc_time,
         'OK-ACCESS-PASSPHRASE': PASSPHRASE,
-        'OK-ACCESS-FLAG': '0',  # '0' indica l'account Live/Reale, '1' per la demo
+        'OK-ACCESS-FLAG': '0',
         'Content-Type': 'application/json'
     }
     return header
@@ -49,10 +44,10 @@ class OKXHandler(http.server.SimpleHTTPRequestHandler):
                 url = 'https://www.okx.com' + request_path
                 headers = get_header('GET', request_path)
                 
-                response = requests.get(url, headers=headers)
+                response = requests.get(url, headers=headers, timeout=10)
                 self.wfile.write(response.content)
             except Exception as e:
-                error_response = json.dumps({"error": str(e)})
+                error_response = json.dumps({"code": "500", "msg": str(e), "data": []})
                 self.wfile.write(error_response.encode('utf-8'))
         else:
             super().do_GET()
@@ -65,7 +60,6 @@ class OKXHandler(http.server.SimpleHTTPRequestHandler):
             self.end_headers()
             
             try:
-                # Legge i dati dell'ordine inviati dalla web app
                 content_length = int(self.headers.get('Content-Length', 0))
                 body = self.rfile.read(content_length).decode('utf-8') if content_length > 0 else '{}'
                 
@@ -73,10 +67,10 @@ class OKXHandler(http.server.SimpleHTTPRequestHandler):
                 url = 'https://www.okx.com' + request_path
                 headers = get_header('POST', request_path, body)
                 
-                response = requests.post(url, headers=headers, data=body)
+                response = requests.post(url, headers=headers, data=body, timeout=10)
                 self.wfile.write(response.content)
             except Exception as e:
-                error_response = json.dumps({"error": str(e)})
+                error_response = json.dumps({"code": "500", "msg": str(e), "data": []})
                 self.wfile.write(error_response.encode('utf-8'))
         else:
             self.send_response(404)
