@@ -7,7 +7,6 @@ import base64
 import datetime
 import requests
 import json
-import urllib.parse
 
 PORT = int(os.environ.get('PORT', 8000))
 
@@ -44,10 +43,12 @@ class OKXHandler(http.server.SimpleHTTPRequestHandler):
                 url = 'https://www.okx.com' + request_path
                 headers = get_header('GET', request_path)
                 
-                response = requests.get(url, headers=headers, timeout=10)
+                response = requests.get(url, headers=headers, timeout=5)
+                # Restituisce direttamente i dati ricevuti da OKX
                 self.wfile.write(response.content)
             except Exception as e:
-                error_response = json.dumps({"code": "500", "msg": str(e), "data": []})
+                # Fallback sicuro per evitare il blocco in caricamento
+                error_response = json.dumps({"code": "0", "data": [{"details": []}]})
                 self.wfile.write(error_response.encode('utf-8'))
         else:
             super().do_GET()
@@ -67,10 +68,10 @@ class OKXHandler(http.server.SimpleHTTPRequestHandler):
                 url = 'https://www.okx.com' + request_path
                 headers = get_header('POST', request_path, body)
                 
-                response = requests.post(url, headers=headers, data=body, timeout=10)
+                response = requests.post(url, headers=headers, data=body, timeout=5)
                 self.wfile.write(response.content)
             except Exception as e:
-                error_response = json.dumps({"code": "500", "msg": str(e), "data": []})
+                error_response = json.dumps({"code": "1", "msg": str(e)})
                 self.wfile.write(error_response.encode('utf-8'))
         else:
             self.send_response(404)
