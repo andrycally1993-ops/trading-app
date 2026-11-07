@@ -11,7 +11,6 @@ import time
 
 PORT = 8000
 
-# NUOVE CREDENZIALI OKX INSERITE
 API_KEY = "de72399a-4c79-4680-baff-6a73e3658035"
 SECRET_KEY = "EA7DD247EE4BB2B81E84C4DF4B6BDE72"
 PASSPHRASE = "King_9396"
@@ -47,26 +46,24 @@ class OKXHandler(http.server.SimpleHTTPRequestHandler):
 
                 if res_data.get('code') == '0' and len(res_data.get('data', [])) > 0:
                     balance_info = res_data['data'][0]
-                    actual_bal = balance_info.get('totalEq', '0.00')
+                    total_eq = balance_info.get('totalEq', '0.00')
                     
-                    usdc_avail = "0.00"
+                    usdc_bal = "0.00"
                     for detail in balance_info.get('details', []):
                         if detail.get('ccy') == 'USDC':
-                            usdc_avail = detail.get('availEq', detail.get('cashBal', '0.00'))
+                            usdc_bal = detail.get('availEq', detail.get('cashBal', detail.get('eq', '0.00')))
                             break
 
-                    final_bal = usdc_avail if float(usdc_avail) > 0 else actual_bal
                     payload = {
-                        "balance": final_bal,
-                        "equity": actual_bal,
+                        "balance": usdc_bal if float(usdc_bal) > 0 else total_eq,
+                        "equity": total_eq,
                         "real": True
                     }
                     self.wfile.write(json.dumps(payload).encode('utf-8'))
                     return
             except Exception as e:
-                print("Errore connessione OKX da server:", e)
+                print("Errore server OKX:", e)
 
-            # Fallback nel caso in cui la chiamata richieda un attimo
             fallback = {
                 "balance": "0.00",
                 "equity": "0.00",
