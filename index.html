@@ -1,4 +1,4 @@
-  <!DOCTYPE html>
+<!DOCTYPE html>
 <html lang="it">
 <head>
     <meta charset="UTF-8">
@@ -29,7 +29,7 @@
             align-items: center;
             margin-bottom: 8px;
         }
-        select, button, input[type="text"], input[type="password"] {
+        select, button {
             background-color: #2a2a2a;
             color: #fff;
             border: 1px solid #444;
@@ -147,28 +147,6 @@
             color: #aaa;
             margin-top: 8px;
         }
-        .modal {
-            display: none;
-            position: fixed;
-            top: 0; left: 0; width: 100%; height: 100%;
-            background-color: rgba(0,0,0,0.8);
-            justify-content: center;
-            align-items: center;
-            z-index: 1000;
-        }
-        .modal-content {
-            background: #1e1e1e;
-            padding: 20px;
-            border-radius: 12px;
-            width: 90%;
-            max-width: 400px;
-            box-sizing: border-box;
-        }
-        .modal-content input {
-            width: 100%;
-            margin-bottom: 10px;
-            box-sizing: border-box;
-        }
     </style>
 </head>
 <body>
@@ -183,17 +161,17 @@
                 <option value="SOL/USDC">SOL/USDC</option>
                 <option value="XRP/USDC">XRP/USDC</option>
             </select>
-            <button id="btnOpenApiModal" style="color: #f1c40f; cursor: pointer; border: 1px solid #f1c40f; background: transparent;">🔑 API OKX (Reale)</button>
+            <span style="color: #f1c40f; font-size: 13px;">🔑 API OKX (Reale)</span>
         </div>
 
         <div class="balance-row">
             <div>
                 <div style="font-size: 11px; color: #aaa;">BALANCE REALE</div>
-                <div class="balance-box balance-display">€0,00</div>
+                <div class="balance-box balance-display">Caricamento...</div>
             </div>
             <div>
                 <div style="font-size: 11px; color: #aaa;">EQUITY REALE</div>
-                <div class="balance-box equity-display">€0,00</div>
+                <div class="balance-box equity-display">Caricamento...</div>
             </div>
             <div>
                 <div style="font-size: 11px; color: #aaa;">P&L TOTALE</div>
@@ -253,106 +231,12 @@
     </div>
 </div>
 
-<!-- Modal Pop-up Configurazione API -->
-<div id="apiModal" class="modal">
-    <div class="modal-content">
-        <h3 style="margin-top:0;">Inserisci Chiavi API OKX</h3>
-        <p style="font-size:12px; color:#aaa;">I dati vengono salvati in sicurezza nel tuo browser per interrogare direttamente il tuo conto.</p>
-        <label style="font-size: 12px; color:#aaa;">API Key:</label>
-        <input type="text" id="inputApiKey" placeholder="f2f94d98-...">
-        <label style="font-size: 12px; color:#aaa;">Secret Key:</label>
-        <input type="password" id="inputSecretKey" placeholder="F4BC6222EC...">
-        <label style="font-size: 12px; color:#aaa;">Passphrase:</label>
-        <input type="password" id="inputPassphrase" placeholder="King_9396">
-        <div style="display:flex; gap:10px; margin-top:10px;">
-            <button id="btnSaveApi" class="btn-action" style="margin-top:0; background:#00b894;">Salva e Connetti</button>
-            <button id="btnCloseModal" class="btn-action" style="margin-top:0; background:#444;">Chiudi</button>
-        </div>
-    </div>
-</div>
-
 <script>
 let selectedSize = "0.01";
 let activePositions = [];
 let currentPair = "BTC/USDC";
 let basePrice = 80088.60;
 
-// Gestione Modal API
-const modal = document.getElementById('apiModal');
-document.getElementById('btnOpenApiModal').addEventListener('click', () => modal.style.display = 'flex');
-document.getElementById('btnCloseModal').addEventListener('click', () => modal.style.display = 'none');
-
-// Carica credenziali salvate se presenti
-let apiKey = localStorage.getItem('okx_apiKey') || "f2f94d98-56b4-4c5a-b363-980a24b16839";
-let secretKey = localStorage.getItem('okx_secretKey') || "F4BC6222EC9594F4DB889A1B5532";
-let passphrase = localStorage.getItem('okx_passphrase') || "King_9396";
-
-document.getElementById('inputApiKey').value = apiKey;
-document.getElementById('inputSecretKey').value = secretKey;
-document.getElementById('inputPassphrase').value = passphrase;
-
-document.getElementById('btnSaveApi').addEventListener('click', () => {
-    apiKey = document.getElementById('inputApiKey').value.trim();
-    secretKey = document.getElementById('inputSecretKey').value.trim();
-    passphrase = document.getElementById('inputPassphrase').value.trim();
-
-    localStorage.setItem('okx_apiKey', apiKey);
-    localStorage.setItem('okx_secretKey', secretKey);
-    localStorage.setItem('okx_passphrase', passphrase);
-
-    modal.style.display = 'none';
-    fetchRealBalance();
-});
-
-// Chiamata diretta a OKX dal browser (Bypass blocchi IP Cloud)
-async function fetchRealBalance() {
-    if (!apiKey || !secretKey || !passphrase) return;
-    try {
-        const timestamp = new Date().toISOString();
-        const path = '/api/v5/account/balance';
-        const method = 'GET';
-        const message = timestamp + method + path;
-
-        const enc = new TextEncoder();
-        const key = await crypto.subtle.importKey(
-            "raw", enc.encode(secretKey), { name: "HMAC", hash: "SHA-256" }, false, ["sign"]
-        );
-        const signatureBuffer = await crypto.subtle.sign("HMAC", key, enc.encode(message));
-        const base64Signature = btoa(String.fromCharCode(...new Uint8Array(signatureBuffer)));
-
-        const response = await fetch("https://www.okx.com" + path, {
-            method: "GET",
-            headers: {
-                "OK-ACCESS-KEY": apiKey,
-                "OK-ACCESS-SIGN": base64Signature,
-                "OK-ACCESS-TIMESTAMP": timestamp,
-                "OK-ACCESS-PASSPHRASE": passphrase,
-                "Content-Type": "application/json"
-            }
-        });
-
-        const data = await response.json();
-        if (data.code === '0' && data.data && data.data.length > 0) {
-            const balanceInfo = data.data[0];
-            let usdcBalance = "0.00";
-            let totalEquity = balanceInfo.totalEq || "0.00";
-            
-            for (let detail of balanceInfo.details || []) {
-                if (detail.ccy === 'USDC') {
-                    usdcBalance = detail.availEq || detail.cashBal || "0.00";
-                    break;
-                }
-            }
-
-            document.querySelector('.balance-display').innerText = `€${parseFloat(usdcBalance).toLocaleString('it-IT', {minimumFractionDigits: 2})}`;
-            document.querySelector('.equity-display').innerText = `€${parseFloat(totalEquity).toLocaleString('it-IT', {minimumFractionDigits: 2})}`;
-        }
-    } catch (err) {
-        console.error("Errore lettura saldo diretto OKX:", err);
-    }
-}
-
-// Gestione Taglia Lotto
 document.querySelectorAll('.size-btn').forEach(btn => {
     btn.addEventListener('click', (e) => {
         document.querySelectorAll('.size-btn').forEach(b => b.classList.remove('active'));
@@ -361,7 +245,6 @@ document.querySelectorAll('.size-btn').forEach(btn => {
     });
 });
 
-// Cambio Coppia
 document.getElementById('pairSelect').addEventListener('change', (e) => {
     currentPair = e.target.value;
     const coin = currentPair.split('/')[0];
@@ -372,7 +255,6 @@ document.getElementById('pairSelect').addEventListener('change', (e) => {
     else basePrice = 80088.60;
 });
 
-// Candele dinamiche
 function renderCandles() {
     const container = document.getElementById('candlesContainer');
     let html = '';
@@ -385,7 +267,19 @@ function renderCandles() {
     container.innerHTML = html;
 }
 
-// Loop Mercato e Autopilot Manuale
+async function fetchBalance() {
+    try {
+        const response = await fetch('/api/balance');
+        const data = await response.json();
+        if (data && data.balance !== undefined) {
+            document.querySelector('.balance-display').innerText = `€${parseFloat(data.balance).toLocaleString('it-IT', {minimumFractionDigits: 2})}`;
+            document.querySelector('.equity-display').innerText = `€${parseFloat(data.equity || data.balance).toLocaleString('it-IT', {minimumFractionDigits: 2})}`;
+        }
+    } catch (err) {
+        console.error("Errore fetch saldo:", err);
+    }
+}
+
 function updateMarketData() {
     const fluctuation = (Math.random() - 0.48) * (basePrice * 0.0005);
     basePrice += fluctuation;
@@ -396,12 +290,11 @@ function updateMarketData() {
     document.getElementById('reliabilityText').innerText = reliability + '%';
     document.getElementById('reliabilityBar').style.width = reliability + '%';
 
-    // Logica Autopilot attivo solo se spunti la casella manualmente
+    // Autopilot attivo solo se spunti la casella manualmente
     const isAutopilotActive = document.getElementById('autopilotToggle').checked;
     if (isAutopilotActive && Math.random() > 0.85 && activePositions.length === 0) {
         const signal = document.getElementById('aiSignalBox').innerText;
         executeTrade(signal.includes('COMPRA') ? 'BUY' : 'SELL');
-        console.log("Autopilot IA ha eseguito un'operazione automatica.");
     }
 
     if (activePositions.length > 0) {
@@ -469,11 +362,10 @@ function updatePositionsUI() {
 }
 
 renderCandles();
-fetchRealBalance();
-setInterval(fetchRealBalance, 10000);
+fetchBalance();
+setInterval(fetchBalance, 10000);
 setInterval(updateMarketData, 2000);
 </script>
 
 </body>
 </html>
-        
