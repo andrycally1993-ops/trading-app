@@ -4,7 +4,7 @@ import os
 import hmac
 import hashlib
 import base64
-from datetime import datetime, timezone
+import datetime
 import requests
 import json
 
@@ -15,8 +15,7 @@ SECRET_KEY = os.environ.get('SECRET_KEY')
 PASSPHRASE = os.environ.get('PASSPHRASE')
 
 def get_header(method, request_path, body=''):
-    # Metodo aggiornato e compatibile al 100% per evitare errori di firma
-    utc_time = datetime.now(timezone.utc).isoformat(timespec='seconds').replace('+00:00', 'Z')
+    utc_time = datetime.datetime.utcnow().isoformat('T') + 'Z'
     message = utc_time + method.upper() + request_path + body
     mac = hmac.new(bytes(SECRET_KEY, encoding='utf-8'), bytes(message, encoding='utf-8'), digestmod=hashlib.sha256)
     sign = base64.b64encode(mac.digest()).decode('utf-8')
@@ -44,10 +43,10 @@ class OKXHandler(http.server.SimpleHTTPRequestHandler):
                 url = 'https://www.okx.com' + request_path
                 headers = get_header('GET', request_path)
                 
-                response = requests.get(url, headers=headers, timeout=5)
+                response = requests.get(url, headers=headers)
                 self.wfile.write(response.content)
             except Exception as e:
-                error_response = json.dumps({"code": "0", "data": [{"details": []}]})
+                error_response = json.dumps({"error": str(e)})
                 self.wfile.write(error_response.encode('utf-8'))
         else:
             super().do_GET()
@@ -67,10 +66,10 @@ class OKXHandler(http.server.SimpleHTTPRequestHandler):
                 url = 'https://www.okx.com' + request_path
                 headers = get_header('POST', request_path, body)
                 
-                response = requests.post(url, headers=headers, data=body, timeout=5)
+                response = requests.post(url, headers=headers, data=body)
                 self.wfile.write(response.content)
             except Exception as e:
-                error_response = json.dumps({"code": "1", "msg": str(e)})
+                error_response = json.dumps({"error": str(e)})
                 self.wfile.write(error_response.encode('utf-8'))
         else:
             self.send_response(404)
