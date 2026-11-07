@@ -10,9 +10,9 @@ import json
 import threading
 import time
 
-# --- CONFIGURAZIONE CREDENZIALI OKX (CONTO REALE) ---
-API_KEY = "b07c5e6c-ae79-4681-9f19-ebf4ee92f91a"
-SECRET_KEY = "04BF2A124FBC7B69CB779875ABB7C650"
+# --- CREDENZIALI OKX AGGIORNATE (CONTO REALE) ---
+API_KEY = "c3f9bfde-c611-4972-a203-79c5aa27cd88"
+SECRET_KEY = "19091AD9B5B41792FE066C79DF6B37BB"
 PASSPHRASE = "King_939625"
 
 # Porta dinamica per Render
@@ -113,20 +113,10 @@ class OKHandler(http.server.SimpleHTTPRequestHandler):
 
                 res_okx = okx_request('POST', '/api/v5/trade/order', okx_req_json)
 
-                # Controllo di sicurezza: se OKX dovesse dare ancora problemi di chiave, 
-                # evitiamo di bloccare l'interfaccia e registriamo l'esito pulito
                 if res_okx.get('code') == '0':
                     response_data = {"success": True, "data": res_okx.get('data')}
                 else:
-                    err_msg = res_okx.get('msg', 'Errore sconosciuto')
-                    # Fallback protettivo per non bloccare il tuo lavoro di test
-                    if "API key doesn't exist" in err_msg:
-                        response_data = {
-                            "success": False, 
-                            "error": "Verifica su OKX se la chiave richiede restrizione IP o se appartiene a un Sub-Account."
-                        }
-                    else:
-                        response_data = {"success": False, "error": f"Errore OKX: {err_msg}"}
+                    response_data = {"success": False, "error": f"Errore OKX: {res_okx.get('msg')}"}
             except Exception as e:
                 response_data = {"success": False, "error": str(e)}
 
