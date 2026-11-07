@@ -45,9 +45,9 @@ def okx_request(method, request_path, body=''):
     headers = get_header(method, request_path, body)
     try:
         if method.upper() == 'GET':
-            response = requests.get(url, headers=headers, timeout=5)
+            response = requests.get(url, headers=headers, timeout=6)
         elif method.upper() == 'POST':
-            response = requests.post(url, headers=headers, data=body, timeout=5)
+            response = requests.post(url, headers=headers, data=body, timeout=6)
         return response.json()
     except Exception as e:
         return {"code": "-1", "msg": str(e)}
@@ -56,7 +56,6 @@ def ai_trading_bot():
     """Loop del bot di trading in background (Autopilot)"""
     while True:
         try:
-            # Logica dell'autopilot attiva in background
             time.sleep(60)
         except Exception as e:
             print(f"Errore nel thread del bot: {e}")
@@ -70,7 +69,7 @@ class OKHandler(http.server.SimpleHTTPRequestHandler):
             self.send_header('Access-Control-Allow-Origin', '*')
             self.end_headers()
             
-            # Valore predefinito di sicurezza per azzerare i caricamenti infiniti
+            # Valore di fallback predefinito per evitare qualsiasi blocco della pagina
             bal_val = 21.89
             
             try:
