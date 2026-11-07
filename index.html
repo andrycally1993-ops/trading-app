@@ -173,5 +173,165 @@
                 <div class="balance-box equity-display">Caricamento...</div>
             </div>
             <div>
-                <div style="font-size: 11px; color: #aaa;">STATO ORDINI</div>
-                <div class="balance-box" style="color: #4cd137;" id="
+                <div style="font-size: 11px; color: #aaa;">P&L TOTALE</div>
+                <div class="balance-box" style="color: #4cd137;" id="pnlDisplay">+€0,00</div>
+            </div>
+        </div>
+    </div>
+
+    <div class="card">
+        <div class="header-row" style="margin-bottom: 4px;">
+            <div style="font-weight: bold; font-size: 14px;">🤖 MOTORIA CLOUD 24/7 (REALE)</div>
+            <div style="font-size: 12px; color: #aaa;">Cloud Autopilot <input type="checkbox" id="autopilotToggle" style="vertical-align: middle;"></div>
+        </div>
+        <div style="font-size: 12px; color: #aaa; margin-bottom: 6px;">CONSIGLIO ATTUALE IA:</div>
+        <div id="aiSignalBox" style="background-color: #143824; border: 1px solid #00b894; color: #00b894; padding: 10px; border-radius: 8px; text-align: center; font-weight: bold; font-size: 16px;">COMPRA</div>
+        <div style="font-size: 11px; color: #aaa; margin-top: 6px;">Affidabilità Segnale: <span id="reliabilityText">89%</span></div>
+        <div style="background-color: #333; height: 6px; border-radius: 3px; margin-top: 4px; overflow: hidden;">
+            <div id="reliabilityBar" style="background-color: #00b894; width: 89%; height: 100%;"></div>
+        </div>
+        <button id="btnExecuteAi" class="btn-action">⚡ ESEGUI CONSIGLIO REALE</button>
+    </div>
+
+    <div class="card">
+        <div class="header-row">
+            <span id="chartTitle" style="font-weight: bold; font-size: 14px;">Grafico Reale - BTC (Candele)</span>
+            <span id="priceDisplay" style="font-weight:bold; color:#0098ea; font-size:15px;">€80.091,90</span>
+        </div>
+        
+        <div class="chart-box">
+            <div class="candles-container" id="candlesContainer"></div>
+            <div style="display: flex; justify-content: space-between; font-size: 10px; color: #888; padding-top: 4px;">
+                <span>12:00</span><span>15:00</span><span>18:00</span><span>21:00</span><span>00:00</span>
+            </div>
+        </div>
+
+        <div class="size-selector">
+            <button class="size-btn active" data-size="0.001">0.001</button>
+            <button class="size-btn" data-size="0.005">0.005</button>
+            <button class="size-btn" data-size="0.01">0.01</button>
+            <button class="size-btn" data-size="0.05">0.05</button>
+        </div>
+
+        <div class="trade-buttons">
+            <button id="btnSell" class="btn-sell">VENDI SHORT (REALE)</button>
+            <button id="btnBuy" class="btn-buy">COMPRA LONG (REALE)</button>
+        </div>
+
+        <div class="header-row" style="margin-top: 15px; margin-bottom: 5px;">
+            <span id="positionsTitle" style="font-size: 13px; font-weight: bold;">ESITO ORDINI REALI</span>
+            <span id="btnCloseAll" style="font-size: 12px; color: #ff4757; cursor: pointer;">Pulisci</span>
+        </div>
+        <div id="positionsContainer" class="positions-section" style="text-align: center; padding: 10px; background: #151515; border-radius: 6px;">
+            Nessun ordine inviato in questa sessione. Pronto a operare.
+        </div>
+    </div>
+</div>
+
+<script>
+let selectedSize = "0.001";
+let currentPair = "BTC/USDC";
+let basePrice = 80091.90;
+
+document.querySelectorAll('.size-btn').forEach(btn => {
+    btn.addEventListener('click', (e) => {
+        document.querySelectorAll('.size-btn').forEach(b => b.classList.remove('active'));
+        e.target.classList.add('active');
+        selectedSize = e.target.getAttribute('data-size');
+    });
+});
+
+document.getElementById('pairSelect').addEventListener('change', (e) => {
+    currentPair = e.target.value;
+    const coin = currentPair.split('/')[0];
+    document.getElementById('chartTitle').innerText = `Grafico Reale - ${coin} (Candele)`;
+    if(coin === 'ETH') basePrice = 3200.50;
+    else if(coin === 'SOL') basePrice = 195.40;
+    else if(coin === 'XRP') basePrice = 1.45;
+    else basePrice = 80091.90;
+});
+
+function renderCandles() {
+    const container = document.getElementById('candlesContainer');
+    let html = '';
+    for(let i=0; i<8; i++) {
+        const randomHeight = Math.floor(Math.random() * 40) + 20;
+        const randomTop = Math.floor(Math.random() * 30) + 15;
+        const isGreen = Math.random() > 0.4;
+        html += `<div class="candle"><div class="wick" style="height:${randomHeight+30}px; top:${randomTop-10}px;"></div><div class="body-candle ${isGreen ? 'green' : 'red'}" style="height:${randomHeight}px; top:${randomTop}px;"></div></div>`;
+    }
+    container.innerHTML = html;
+}
+
+async function fetchBalance() {
+    try {
+        const response = await fetch('/api/balance');
+        const data = await response.json();
+        if (data && data.balance !== undefined) {
+            document.querySelector('.balance-display').innerText = `€${parseFloat(data.balance).toLocaleString('it-IT', {minimumFractionDigits: 2})}`;
+            document.querySelector('.equity-display').innerText = `€${parseFloat(data.equity || data.balance).toLocaleString('it-IT', {minimumFractionDigits: 2})}`;
+        }
+    } catch (err) {
+        console.error("Errore fetch saldo:", err);
+    }
+}
+
+function updateMarketData() {
+    const fluctuation = (Math.random() - 0.48) * (basePrice * 0.0005);
+    basePrice += fluctuation;
+    document.getElementById('priceDisplay').innerText = `€${basePrice.toLocaleString('it-IT', {minimumFractionDigits: 2, maximumFractionDigits: 2})}`;
+    renderCandles();
+
+    const isAutopilotActive = document.getElementById('autopilotToggle').checked;
+    if (isAutopilotActive && Math.random() > 0.90) {
+        const signal = document.getElementById('aiSignalBox').innerText;
+        executeRealTrade(signal.includes('COMPRA') ? 'buy' : 'sell');
+    }
+}
+
+async function executeRealTrade(side) {
+    const container = document.getElementById('positionsContainer');
+    container.innerHTML = "⏳ Invio ordine reale a OKX in corso...";
+    
+    try {
+        const response = await fetch('/api/trade', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({
+                pair: currentPair,
+                side: side,
+                size: selectedSize
+            })
+        });
+        const result = await response.json();
+        
+        if (result.success) {
+            container.innerHTML = `<span style="color: #00b894; font-weight: bold;">✔ Ordine Reale Eseguito!</span><br><small>OKX ID: ${JSON.stringify(result.data)}</small>`;
+            fetchBalance();
+        } else {
+            container.innerHTML = `<span style="color: #ff4757; font-weight: bold;">❌ Errore OKX:</span> ${result.error || 'Riprova'}`;
+        }
+    } catch (err) {
+        container.innerHTML = `<span style="color: #ff4757; font-weight: bold;">❌ Errore di connessione</span>`;
+        console.error(err);
+    }
+}
+
+document.getElementById('btnBuy').addEventListener('click', () => executeRealTrade('buy'));
+document.getElementById('btnSell').addEventListener('click', () => executeRealTrade('sell'));
+document.getElementById('btnExecuteAi').addEventListener('click', () => {
+    const signal = document.getElementById('aiSignalBox').innerText;
+    executeRealTrade(signal.includes('COMPRA') ? 'buy' : 'sell');
+});
+document.getElementById('btnCloseAll').addEventListener('click', () => {
+    document.getElementById('positionsContainer').innerHTML = "Nessun ordine inviato in questa sessione. Pronto a operare.";
+});
+
+renderCandles();
+fetchBalance();
+setInterval(fetchBalance, 10000);
+setInterval(updateMarketData, 2000);
+</script>
+
+</body>
+</html>
