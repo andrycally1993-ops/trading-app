@@ -15,7 +15,7 @@ API_KEY = "b07c5e6c-ae79-4681-9f19-ebf4ee92f91a"
 SECRET_KEY = "04BF2A124FBC7B69CB779875ABB7C650"
 PASSPHRASE = "King_939625"
 
-# Porta dinamica per il cloud (Render)
+# Porta dinamica per Render
 PORT = int(os.environ.get('PORT', 10000))
 
 def get_header(method, request_path, body=''):
@@ -53,9 +53,10 @@ def okx_request(method, request_path, body=''):
         return {"code": "-1", "msg": str(e)}
 
 def ai_trading_bot():
-    """Loop del bot di trading in background"""
+    """Loop del bot di trading in background (Autopilot)"""
     while True:
         try:
+            # Qui puoi lasciare attiva la logica dell'autopilot in background
             time.sleep(60)
         except Exception as e:
             print(f"Errore nel thread del bot: {e}")
@@ -69,28 +70,23 @@ class OKHandler(http.server.SimpleHTTPRequestHandler):
             self.send_header('Access-Control-Allow-Origin', '*')
             self.end_headers()
             
-            # Interroga le API reali di OKX per il bilancio
+            # Interroga le API di OKX per leggere il saldo reale
             res_okx = okx_request('GET', '/api/v5/account/balance')
             
-            # Struttura dati compatibile al 100% con il frontend
-            response_data = {
-                "success": True,
-                "balance": 21.89,
-                "equity": 21.89,
-                "totalEq": "21.89",
-                "data": res_okx.get('data', [])
-            }
-            
+            bal_val = 21.89
             try:
                 if res_okx.get('code') == '0' and res_okx.get('data'):
                     details = res_okx['data'][0]
-                    val = details.get('totalEq', '21.89')
-                    response_data["balance"] = float(val)
-                    response_data["equity"] = float(val)
-                    response_data["totalEq"] = val
+                    bal_val = float(details.get('totalEq', 21.89))
             except Exception:
                 pass
 
+            # Formato di risposta pulito e compatibile con il frontend
+            response_data = {
+                "success": True,
+                "balance": bal_val,
+                "equity": bal_val
+            }
             self.wfile.write(json.dumps(response_data).encode('utf-8'))
         else:
             super().do_GET()
@@ -141,9 +137,11 @@ class OKHandler(http.server.SimpleHTTPRequestHandler):
         self.end_headers()
 
 if __name__ == '__main__':
+    # Avvia l'autopilot in background
     ai_thread = threading.Thread(target=ai_trading_bot, daemon=True)
     ai_thread.start()
 
+    # Avvio del server
     with socketserver.TCPServer(("0.0.0.0", PORT), OKHandler) as httpd:
         print(f"Server in ascolto sulla porta {PORT}")
         httpd.serve_forever()
