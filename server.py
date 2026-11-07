@@ -19,7 +19,7 @@ PASSPHRASE = "King_939625"
 PORT = int(os.environ.get('PORT', 10000))
 
 def get_header(method, request_path, body=''):
-    """Genera le firme crittografiche richieste dalle API di OKX includendo correttamente il corpo della richiesta"""
+    """Genera le firme crittografiche per il conto reale di OKX"""
     try:
         iso = datetime.datetime.now(datetime.timezone.utc).strftime('%Y-%m-%dT%H:%M:%S.%f')[:-3] + 'Z'
         message = iso + method.upper() + request_path + body
@@ -31,14 +31,15 @@ def get_header(method, request_path, body=''):
             "OK-ACCESS-SIGN": signature,
             "OK-ACCESS-TIMESTAMP": iso,
             "OK-ACCESS-PASSPHRASE": PASSPHRASE,
-            "Content-Type": "application/json"
+            "Content-Type": "application/json",
+            "x-simulated-trading": "0"  # Forza l'ambiente REALE
         }
     except Exception as e:
         print(f"Errore generazione header: {e}")
         return {}
 
 def okx_request(method, request_path, body=''):
-    """Esegue la chiamata HTTP verso gli endpoint ufficiali di OKX passando il corpo esatto"""
+    """Esegue la chiamata HTTP verso le API ufficiali di OKX"""
     url = f"https://www.okx.com{request_path}"
     headers = get_header(method, request_path, body)
     try:
@@ -101,7 +102,6 @@ class OKHandler(http.server.SimpleHTTPRequestHandler):
                 side = data_in.get('side', 'buy')
                 size = str(data_in.get('size', '0.001'))
 
-                # JSON esatto richiesto da OKX per l'ordine a mercato
                 okx_req_dict = {
                     "instId": pair,
                     "tdMode": "cash",
@@ -111,7 +111,6 @@ class OKHandler(http.server.SimpleHTTPRequestHandler):
                 }
                 okx_req_json = json.dumps(okx_req_dict)
 
-                # Chiamata POST passando il corpo firmato correttamente
                 res_okx = okx_request('POST', '/api/v5/trade/order', okx_req_json)
 
                 if res_okx.get('code') == '0':
