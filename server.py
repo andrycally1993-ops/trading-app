@@ -12,10 +12,10 @@ import time
 
 PORT = int(os.environ.get('PORT', 8000))
 
-# Pulisce eventuali spazi accidentali nelle variabili d'ambiente
-API_KEY = os.environ.get('API_KEY', '').strip()
-SECRET_KEY = os.environ.get('SECRET_KEY', '').strip()
-PASSPHRASE = os.environ.get('PASSPHRASE', '').strip()
+# Inserisci qui direttamente le tue credenziali OKX reali per azzerare qualsiasi errore su Render
+API_KEY = "ca0559ce-7c3e-48a0-ae96-6e0682281df6"
+SECRET_KEY = "9D1BD224E2C2FF59542FA065FFFE075C"
+PASSPHRASE = "King_939625"
 
 def get_header(method, request_path, body=''):
     utc_time = datetime.datetime.now(datetime.timezone.utc).isoformat(timespec='milliseconds').replace('+00:00', 'Z')
@@ -28,7 +28,7 @@ def get_header(method, request_path, body=''):
         'OK-ACCESS-SIGN': sign,
         'OK-ACCESS-TIMESTAMP': utc_time,
         'OK-ACCESS-PASSPHRASE': PASSPHRASE,
-        'OK-ACCESS-FLAG': '0',  # '0' per il conto reale live
+        'OK-ACCESS-FLAG': '0',
         'Content-Type': 'application/json'
     }
     return header
