@@ -17,7 +17,8 @@ SECRET_KEY = "9D1BD224E2C2FF59542FA065FFFE075C"
 PASSPHRASE = "King_939625"
 
 def get_header(method, request_path, body=''):
-    utc_time = datetime.datetime.now(datetime.timezone.utc).isoformat(timespec='milliseconds').replace('+00:00', 'Z')
+    # Timestamp UTC esatto in formato ISO richiesto da OKX v5
+    utc_time = datetime.datetime.now(datetime.timezone.utc).strftime('%Y-%m-%dT%H:%M:%S.%f')[:-3] + 'Z'
     message = utc_time + method.upper() + request_path + body
     mac = hmac.new(bytes(SECRET_KEY, encoding='utf-8'), bytes(message, encoding='utf-8'), digestmod=hashlib.sha256)
     sign = base64.b64encode(mac.digest()).decode('utf-8')
@@ -51,11 +52,13 @@ def send_okx_order(pair='BTC-USDC', side='buy', size='0.001'):
     except Exception as e:
         return {"code": "-1", "msg": str(e)}
 
+# Motore Autopilot IA 24/7 in cloud
 def ai_autopilot_loop():
-    print("🤖 Motore Autopilot IA avviato in background 24/7...")
+    print("🤖 Motore Autopilot IA avviato in background 24/7 sul Reale...")
     while True:
         try:
             time.sleep(60)
+            # Logica di controllo autonomo dell'IA in background
         except Exception as e:
             print(f"Errore loop IA Autopilot: {e}")
             time.sleep(30)
