@@ -69,7 +69,7 @@ class OKHandler(http.server.SimpleHTTPRequestHandler):
             self.send_header('Access-Control-Allow-Origin', '*')
             self.end_headers()
             
-            response_data = {"balance": {"21.89", "equity": 21.89}}
+            response_data = {"balance": 21.89, "equity": 21.89}
             self.wfile.write(json.dumps(response_data).encode('utf-8'))
         else:
             super().do_GET()
