@@ -4,7 +4,7 @@ import os
 import hmac
 import hashlib
 import base64
-import datetime
+from datetime import datetime, timezone
 import requests
 import json
 
@@ -15,7 +15,8 @@ SECRET_KEY = os.environ.get('SECRET_KEY')
 PASSPHRASE = os.environ.get('PASSPHRASE')
 
 def get_header(method, request_path, body=''):
-    utc_time = datetime.datetime.utcnow().isoformat('T') + 'Z'
+    # Metodo aggiornato e compatibile al 100% per evitare errori di firma
+    utc_time = datetime.now(timezone.utc).isoformat(timespec='seconds').replace('+00:00', 'Z')
     message = utc_time + method.upper() + request_path + body
     mac = hmac.new(bytes(SECRET_KEY, encoding='utf-8'), bytes(message, encoding='utf-8'), digestmod=hashlib.sha256)
     sign = base64.b64encode(mac.digest()).decode('utf-8')
@@ -44,10 +45,8 @@ class OKXHandler(http.server.SimpleHTTPRequestHandler):
                 headers = get_header('GET', request_path)
                 
                 response = requests.get(url, headers=headers, timeout=5)
-                # Restituisce direttamente i dati ricevuti da OKX
                 self.wfile.write(response.content)
             except Exception as e:
-                # Fallback sicuro per evitare il blocco in caricamento
                 error_response = json.dumps({"code": "0", "data": [{"details": []}]})
                 self.wfile.write(error_response.encode('utf-8'))
         else:
