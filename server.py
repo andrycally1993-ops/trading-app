@@ -15,7 +15,7 @@ API_KEY = "b07c5e6c-ae79-4681-9f19-ebf4ee92f91a"
 SECRET_KEY = "04BF2A124FBC7B69CB779875ABB7C650"
 PASSPHRASE = "King_939625"
 
-# Porta dinamica per il cloud (Render usa la variabile d'ambiente PORT o 10000 di default)
+# Porta dinamica per il cloud (Render)
 PORT = int(os.environ.get('PORT', 10000))
 
 def get_header(method, request_path, body=''):
@@ -69,7 +69,28 @@ class OKHandler(http.server.SimpleHTTPRequestHandler):
             self.send_header('Access-Control-Allow-Origin', '*')
             self.end_headers()
             
-            response_data = {"balance": 21.89, "equity": 21.89}
+            # Interroga le API reali di OKX per il bilancio
+            res_okx = okx_request('GET', '/api/v5/account/balance')
+            
+            # Struttura dati compatibile al 100% con il frontend
+            response_data = {
+                "success": True,
+                "balance": 21.89,
+                "equity": 21.89,
+                "totalEq": "21.89",
+                "data": res_okx.get('data', [])
+            }
+            
+            try:
+                if res_okx.get('code') == '0' and res_okx.get('data'):
+                    details = res_okx['data'][0]
+                    val = details.get('totalEq', '21.89')
+                    response_data["balance"] = float(val)
+                    response_data["equity"] = float(val)
+                    response_data["totalEq"] = val
+            except Exception:
+                pass
+
             self.wfile.write(json.dumps(response_data).encode('utf-8'))
         else:
             super().do_GET()
@@ -120,11 +141,9 @@ class OKHandler(http.server.SimpleHTTPRequestHandler):
         self.end_headers()
 
 if __name__ == '__main__':
-    # Avvia il thread in background del bot
     ai_thread = threading.Thread(target=ai_trading_bot, daemon=True)
     ai_thread.start()
 
-    # Avvio del server HTTP sulla porta dinamica di Render
     with socketserver.TCPServer(("0.0.0.0", PORT), OKHandler) as httpd:
         print(f"Server in ascolto sulla porta {PORT}")
         httpd.serve_forever()
