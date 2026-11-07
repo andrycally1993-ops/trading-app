@@ -152,7 +152,6 @@
 <body>
 
 <div class="container">
-    <!-- Header e Conto -->
     <div class="card">
         <div class="header-row">
             <select id="pairSelect">
@@ -161,7 +160,7 @@
                 <option value="SOL/USDC">SOL/USDC</option>
                 <option value="XRP/USDC">XRP/USDC</option>
             </select>
-            <span style="color: #f1c40f; font-size: 13px;">🔑 API OKX (Reale)</span>
+            <span style="color: #f1c40f; font-size: 13px;">🔑 API USDC IA (Reale)</span>
         </div>
 
         <div class="balance-row">
@@ -180,7 +179,6 @@
         </div>
     </div>
 
-    <!-- Autopilot IA -->
     <div class="card">
         <div class="header-row" style="margin-bottom: 4px;">
             <div style="font-weight: bold; font-size: 14px;">🤖 MOTORIA CLOUD 24/7 (REALE)</div>
@@ -188,18 +186,17 @@
         </div>
         <div style="font-size: 12px; color: #aaa; margin-bottom: 6px;">CONSIGLIO ATTUALE IA:</div>
         <div id="aiSignalBox" style="background-color: #143824; border: 1px solid #00b894; color: #00b894; padding: 10px; border-radius: 8px; text-align: center; font-weight: bold; font-size: 16px;">COMPRA</div>
-        <div style="font-size: 11px; color: #aaa; margin-top: 6px;">Affidabilità Segnale: <span id="reliabilityText">88%</span></div>
+        <div style="font-size: 11px; color: #aaa; margin-top: 6px;">Affidabilità Segnale: <span id="reliabilityText">89%</span></div>
         <div style="background-color: #333; height: 6px; border-radius: 3px; margin-top: 4px; overflow: hidden;">
-            <div id="reliabilityBar" style="background-color: #00b894; width: 88%; height: 100%;"></div>
+            <div id="reliabilityBar" style="background-color: #00b894; width: 89%; height: 100%;"></div>
         </div>
         <button id="btnExecuteAi" class="btn-action">⚡ ESEGUI CONSIGLIO REALE</button>
     </div>
 
-    <!-- Grafico a Candele e Operatività -->
     <div class="card">
         <div class="header-row">
             <span id="chartTitle" style="font-weight: bold; font-size: 14px;">Grafico Reale - BTC (Candele)</span>
-            <span id="priceDisplay" style="font-weight:bold; color:#0098ea; font-size:15px;">€80.088,60</span>
+            <span id="priceDisplay" style="font-weight:bold; color:#0098ea; font-size:15px;">€80.091,90</span>
         </div>
         
         <div class="chart-box">
@@ -235,7 +232,7 @@
 let selectedSize = "0.01";
 let activePositions = [];
 let currentPair = "BTC/USDC";
-let basePrice = 80088.60;
+let basePrice = 80091.90;
 
 document.querySelectorAll('.size-btn').forEach(btn => {
     btn.addEventListener('click', (e) => {
@@ -252,7 +249,7 @@ document.getElementById('pairSelect').addEventListener('change', (e) => {
     if(coin === 'ETH') basePrice = 3200.50;
     else if(coin === 'SOL') basePrice = 195.40;
     else if(coin === 'XRP') basePrice = 1.45;
-    else basePrice = 80088.60;
+    else basePrice = 80091.90;
 });
 
 function renderCandles() {
@@ -285,10 +282,6 @@ function updateMarketData() {
     basePrice += fluctuation;
     document.getElementById('priceDisplay').innerText = `€${basePrice.toLocaleString('it-IT', {minimumFractionDigits: 2, maximumFractionDigits: 2})}`;
     renderCandles();
-
-    const reliability = Math.floor(Math.random() * 10) + 84;
-    document.getElementById('reliabilityText').innerText = reliability + '%';
-    document.getElementById('reliabilityBar').style.width = reliability + '%';
 
     const isAutopilotActive = document.getElementById('autopilotToggle').checked;
     if (isAutopilotActive && Math.random() > 0.85 && activePositions.length === 0) {
