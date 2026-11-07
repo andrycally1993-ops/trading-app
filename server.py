@@ -10,75 +10,72 @@ import json
 import threading
 import time
 
-# Porta dinamica per il cloud
-PORT = int(os.environ.get('PORT', 10000))
-
-API_KEY = "ca05ef58-17a8-4e1a-96e8-8138e21dc4c0"
-SECRET_KEY = "9D1BD224E2C2FF59542FA065FFFE075C"
+# Configurazione credenziali OKX (Conto Reale)
+API_KEY = "b07c5e6c-ae79-4681-9f19-ebf4ee92f91a"
+SECRET_KEY = "04BF2A124FBC7B69CB779875ABB7C650"
 PASSPHRASE = "King_939625"
 
-def get_header(method, request_path, body=''):
-    utc_time = datetime.datetime.now(datetime.timezone.utc).strftime('%Y-%m-%dT%H:%M:%S.%f')[:-3] + 'Z'
-    message = utc_time + method.upper() + request_path + body
-    mac = hmac.new(bytes(SECRET_KEY, encoding='utf-8'), bytes(message, encoding='utf-8'), digestmod=hashlib.sha256)
-    sign = base64.b64encode(mac.digest()).decode('utf-8')
-    
-    header = {
-        'OK-ACCESS-KEY': API_KEY,
-        'OK-ACCESS-SIGN': sign,
-        'OK-ACCESS-TIMESTAMP': utc_time,
-        'OK-ACCESS-PASSPHRASE': PASSPHRASE,
-        'OK-ACCESS-FLAG': '0',
-        'Content-Type': 'application/json'
-    }
-    return header
+# Porta dinamica per il cloud (Render usa la variabile d'ambiente PORT o 10000 di default)
+PORT = int(os.environ.get('PORT', 10000))
 
-def send_okx_order(pair='BTC-USDC', side='buy', size='0.001'):
+def get_header(method, request_path, body=''):
+    """Genera le firme crittografiche richieste dalle API di OKX"""
     try:
-        okx_order_body = {
-            "instId": pair,
-            "tdMode": "cash",
-            "side": side,
-            "ordType": "market",
-            "sz": str(size)
+        iso = datetime.datetime.utcnow().isoformat('T') + 'Z'
+        if iso.endswith('Z'):
+            iso = iso[:-1] + '.000Z'
+        message = iso + method.upper() + request_path + body
+        mac = hmac.new(bytes(SECRET_KEY, encoding='utf-8'), bytes(message, encoding='utf-8'), digestmod=hashlib.sha256)
+        d = mac.digest()
+        signature = base64.b64encode(d).decode('utf-8')
+        return {
+            "OK-ACCESS-KEY": API_KEY,
+            "OK-ACCESS-SIGN": signature,
+            "OK-ACCESS-TIMESTAMP": iso,
+            "OK-ACCESS-PASSPHRASE": PASSPHRASE,
+            "Content-Type": "application/json"
         }
-        request_path = '/api/v5/trade/order'
-        url = 'https://www.okx.com' + request_path
-        payload_str = json.dumps(okx_order_body)
-        headers = get_header('POST', request_path, payload_str)
-        
-        res = requests.post(url, headers=headers, data=payload_str, timeout=10)
-        return res.json()
+    except Exception as e:
+        print(f"Errore generazione header: {e}")
+        return {}
+
+def okx_request(method, request_path, body=''):
+    """Esegue la chiamata HTTP verso gli endpoint ufficiali di OKX"""
+    url = f"https://www.okx.com{request_path}"
+    headers = get_header(method, request_path, body)
+    try:
+        if method.upper() == 'GET':
+            response = requests.get(url, headers=headers, timeout=10)
+        elif method.upper() == 'POST':
+            response = requests.post(url, headers=headers, data=body, timeout=10)
+        return response.json()
     except Exception as e:
         return {"code": "-1", "msg": str(e)}
 
-def ai_autopilot_loop():
-    print("🤖 Motore Autopilot IA avviato in background 24/7...")
+def ai_trading_bot():
+    """Loop del bot di trading in background"""
     while True:
         try:
             time.sleep(60)
         except Exception as e:
-            print(f"Errore loop IA Autopilot: {e}")
-            time.sleep(30)
+            print(f"Errore nel thread del bot: {e}")
+            time.sleep(10)
 
-ai_thread = threading.Thread(target=ai_autopilot_loop, daemon=True)
-ai_thread.start()
-
-class OKXHandler(http.server.SimpleHTTPRequestHandler):
+class OKHandler(http.server.SimpleHTTPRequestHandler):
     def do_GET(self):
-        if self.path.startswith('/api/balance'):
+        if self.path == '/balance':
             self.send_response(200)
             self.send_header('Content-Type', 'application/json')
             self.send_header('Access-Control-Allow-Origin', '*')
             self.end_headers()
             
-            response_data = {"balance": 21.89, "equity": 21.89}
+            response_data = {"balance": {"21.89", "equity": 21.89}}
             self.wfile.write(json.dumps(response_data).encode('utf-8'))
         else:
             super().do_GET()
 
     def do_POST(self):
-        if self.path == '/api/trade':
+        if self.path == '/trade':
             self.send_response(200)
             self.send_header('Content-Type', 'application/json')
             self.send_header('Access-Control-Allow-Origin', '*')
@@ -86,24 +83,31 @@ class OKXHandler(http.server.SimpleHTTPRequestHandler):
             
             try:
                 content_length = int(self.headers.get('Content-Length', 0))
-                body = self.rfile.read(content_length).decode('utf-8') if content_length > 0 else '{}'
-                data_in = json.loads(body)
-                
-                pair = data_in.get('pair', 'BTC/USDC').replace('/', '-')
+                body = self.rfile.read(content_length).decode('utf-8') if content_length > 0 else ''
+                data_in = json.loads(body) if body else {}
+
+                pair = data_in.get('pair', 'BTC/USDT').replace('/', '-')
                 side = data_in.get('side', 'buy')
                 size = str(data_in.get('size', '0.001'))
-                
-                okx_res_json = send_okx_order(pair=pair, side=side, size=size)
-                
-                if okx_res_json.get('code') == '0':
-                    response_data = {"success": True, "data": okx_res_json.get('data')}
+
+                okx_req_json = json.dumps({
+                    "instId": pair,
+                    "tdMode": "cash",
+                    "side": side,
+                    "ordType": "market",
+                    "sz": size
+                })
+
+                res_okx = okx_request('POST', '/api/v5/trade/order', okx_req_json)
+
+                if res_okx.get('code') == '0':
+                    response_data = {"success": True, "data": res_okx.get('data')}
                 else:
-                    response_data = {"success": False, "error": okx_res_json.get('msg', 'Errore esecuzione OKX')}
-                
-                self.wfile.write(json.dumps(response_data).encode('utf-8'))
+                    response_data = {"success": False, "error": f"Errore esecuzione OKX: {res_okx.get('msg')}"}
             except Exception as e:
-                error_response = json.dumps({"success": False, "error": str(e)})
-                self.wfile.write(error_response.encode('utf-8'))
+                response_data = {"success": False, "error": str(e)}
+
+            self.wfile.write(json.dumps(response_data).encode('utf-8'))
         else:
             self.send_response(404)
             self.end_headers()
@@ -116,6 +120,11 @@ class OKXHandler(http.server.SimpleHTTPRequestHandler):
         self.end_headers()
 
 if __name__ == '__main__':
-    with socketserver.TCPServer(("0.0.0.0", PORT), OKXHandler) as httpd:
+    # Avvia il thread in background del bot
+    ai_thread = threading.Thread(target=ai_trading_bot, daemon=True)
+    ai_thread.start()
+
+    # Avvio del server HTTP sulla porta dinamica di Render
+    with socketserver.TCPServer(("0.0.0.0", PORT), OKHandler) as httpd:
         print(f"Server in ascolto sulla porta {PORT}")
         httpd.serve_forever()
