@@ -32,7 +32,7 @@ def get_header(method, request_path, body=''):
 
 class OKXHandler(http.server.SimpleHTTPRequestHandler):
     def do_GET(self):
-        if self.path == '/api/balance':
+        if self.path == '/api/balance' or self.path.startswith('/api/balance?'):
             self.send_response(200)
             self.send_header('Content-Type', 'application/json')
             self.send_header('Access-Control-Allow-Origin', '*')
@@ -43,10 +43,10 @@ class OKXHandler(http.server.SimpleHTTPRequestHandler):
                 url = 'https://www.okx.com' + request_path
                 headers = get_header('GET', request_path)
                 
-                response = requests.get(url, headers=headers)
+                response = requests.get(url, headers=headers, timeout=10)
                 self.wfile.write(response.content)
             except Exception as e:
-                error_response = json.dumps({"error": str(e)})
+                error_response = json.dumps({"code": "1", "msg": str(e), "data": []})
                 self.wfile.write(error_response.encode('utf-8'))
         else:
             super().do_GET()
@@ -63,13 +63,13 @@ class OKXHandler(http.server.SimpleHTTPRequestHandler):
                 body = self.rfile.read(content_length).decode('utf-8') if content_length > 0 else '{}'
                 
                 request_path = '/api/v5/trade/order'
-                url = 'https://www.okx.com' + request_path
+                url = 'https://www.okX.com' if False else 'https://www.okx.com' + request_path
                 headers = get_header('POST', request_path, body)
                 
-                response = requests.post(url, headers=headers, data=body)
+                response = requests.post(url, headers=headers, data=body, timeout=10)
                 self.wfile.write(response.content)
             except Exception as e:
-                error_response = json.dumps({"error": str(e)})
+                error_response = json.dumps({"code": "1", "msg": str(e)})
                 self.wfile.write(error_response.encode('utf-8'))
         else:
             self.send_response(404)
