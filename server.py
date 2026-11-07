@@ -10,7 +10,7 @@ import json
 import threading
 import time
 
-# Configurazione credenziali OKX (Conto Reale)
+# --- CONFIGURAZIONE CREDENZIALI OKX (CONTO REALE) ---
 API_KEY = "b07c5e6c-ae79-4681-9f19-ebf4ee92f91a"
 SECRET_KEY = "04BF2A124FBC7B69CB779875ABB7C650"
 PASSPHRASE = "King_939625"
@@ -21,7 +21,6 @@ PORT = int(os.environ.get('PORT', 10000))
 def get_header(method, request_path, body=''):
     """Genera le firme crittografiche richieste dalle API di OKX con timestamp ISO corretto"""
     try:
-        # Timestamp UTC preciso nel formato ISO richiesto da OKX
         iso = datetime.datetime.now(datetime.timezone.utc).strftime('%Y-%m-%dT%H:%M:%S.%f')[:-3] + 'Z'
         message = iso + method.upper() + request_path + body
         mac = hmac.new(bytes(SECRET_KEY, encoding='utf-8'), bytes(message, encoding='utf-8'), digestmod=hashlib.sha256)
