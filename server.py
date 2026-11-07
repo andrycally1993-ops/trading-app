@@ -10,7 +10,8 @@ import json
 import threading
 import time
 
-PORT = int(os.environ.get('PORT', 8000))
+# Porta dinamica per il cloud
+PORT = int(os.environ.get('PORT', 10000))
 
 API_KEY = "ca05ef58-17a8-4e1a-96e8-8138e21dc4c0"
 SECRET_KEY = "9D1BD224E2C2FF59542FA065FFFE075C"
@@ -47,10 +48,8 @@ def send_okx_order(pair='BTC-USDC', side='buy', size='0.001'):
         headers = get_header('POST', request_path, payload_str)
         
         res = requests.post(url, headers=headers, data=payload_str, timeout=10)
-        print(f"Risposta OKX raw: {res.text}")
         return res.json()
     except Exception as e:
-        print(f"Eccezione invio ordine OKX: {e}")
         return {"code": "-1", "msg": str(e)}
 
 def ai_autopilot_loop():
