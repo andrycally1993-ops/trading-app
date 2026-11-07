@@ -12,7 +12,6 @@ import time
 
 PORT = int(os.environ.get('PORT', 8000))
 
-# Inserisci qui direttamente le tue credenziali OKX reali per azzerare qualsiasi errore su Render
 API_KEY = "ca0559ce-7c3e-48a0-ae96-6e0682281df6"
 SECRET_KEY = "9D1BD224E2C2FF59542FA065FFFE075C"
 PASSPHRASE = "King_939625"
@@ -52,9 +51,6 @@ def send_okx_order(pair='BTC-USDC', side='buy', size='0.001'):
     except Exception as e:
         return {"code": "-1", "msg": str(e)}
 
-# -------------------------------------------------------------
-# MOTORE AUTOPILOT IA 24/7
-# -------------------------------------------------------------
 def ai_autopilot_loop():
     print("🤖 Motore Autopilot IA avviato in background 24/7...")
     while True:
@@ -67,9 +63,6 @@ def ai_autopilot_loop():
 ai_thread = threading.Thread(target=ai_autopilot_loop, daemon=True)
 ai_thread.start()
 
-# -------------------------------------------------------------
-# SERVER HTTP
-# -------------------------------------------------------------
 class OKXHandler(http.server.SimpleHTTPRequestHandler):
     def do_GET(self):
         if self.path.startswith('/api/balance'):
@@ -78,7 +71,6 @@ class OKXHandler(http.server.SimpleHTTPRequestHandler):
             self.send_header('Access-Control-Allow-Origin', '*')
             self.end_headers()
             
-            # Saldo fisso e stabile a 21,89 €
             response_data = {"balance": 21.89, "equity": 21.89}
             self.wfile.write(json.dumps(response_data).encode('utf-8'))
         else:
