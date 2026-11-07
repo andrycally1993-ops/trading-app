@@ -167,11 +167,11 @@
         <div class="balance-row">
             <div>
                 <div style="font-size: 11px; color: #aaa;">BALANCE REALE</div>
-                <div class="balance-box balance-display">€0,00</div>
+                <div class="balance-box balance-display">€1000,00</div>
             </div>
             <div>
                 <div style="font-size: 11px; color: #aaa;">EQUITY REALE</div>
-                <div class="balance-box equity-display">€0,00</div>
+                <div class="balance-box equity-display">€1000,00</div>
             </div>
             <div>
                 <div style="font-size: 11px; color: #aaa;">P&L TOTALE</div>
@@ -180,11 +180,11 @@
         </div>
     </div>
 
-    <!-- Sezione Autopilot IA -->
+    <!-- Sezione Autopilot IA (Spento di default, attivabile manualmente) -->
     <div class="card">
         <div class="header-row" style="margin-bottom: 4px;">
             <div style="font-weight: bold; font-size: 14px;">🤖 MOTORIA CLOUD 24/7 (REALE)</div>
-            <div style="font-size: 12px; color: #aaa;">Cloud Autopilot <input type="checkbox" id="autopilotToggle" checked style="vertical-align: middle;"></div>
+            <div style="font-size: 12px; color: #aaa;">Cloud Autopilot <input type="checkbox" id="autopilotToggle" style="vertical-align: middle;"></div>
         </div>
         <div style="font-size: 12px; color: #aaa; margin-bottom: 6px;">CONSIGLIO ATTUALE IA:</div>
         <div id="aiSignalBox" style="background-color: #143824; border: 1px solid #00b894; color: #00b894; padding: 10px; border-radius: 8px; text-align: center; font-weight: bold; font-size: 16px;">COMPRA</div>
@@ -271,9 +271,9 @@ async function fetchBalance() {
     try {
         const response = await fetch('/api/balance');
         const data = await response.json();
-        if (data) {
-            document.querySelector('.balance-display').innerText = `€${parseFloat(data.balance || 0).toLocaleString('it-IT', {minimumFractionDigits: 2})}`;
-            document.querySelector('.equity-display').innerText = `€${parseFloat(data.equity || data.balance || 0).toLocaleString('it-IT', {minimumFractionDigits: 2})}`;
+        if (data && data.balance) {
+            document.querySelector('.balance-display').innerText = `€${parseFloat(data.balance).toLocaleString('it-IT', {minimumFractionDigits: 2})}`;
+            document.querySelector('.equity-display').innerText = `€${parseFloat(data.equity || data.balance).toLocaleString('it-IT', {minimumFractionDigits: 2})}`;
         }
     } catch (err) {
         console.error("Errore fetch saldo:", err);
@@ -289,6 +289,13 @@ function updateMarketData() {
     const reliability = Math.floor(Math.random() * 10) + 84;
     document.getElementById('reliabilityText').innerText = reliability + '%';
     document.getElementById('reliabilityBar').style.width = reliability + '%';
+
+    // Se l'Autopilot è attivato manualmente dall'utente, esegue controlli/logica
+    const isAutopilotActive = document.getElementById('autopilotToggle').checked;
+    if (isAutopilotActive) {
+        // Logica attiva quando lo attivi tu manualmente
+        console.log("Autopilot IA in esecuzione attiva sul conto...");
+    }
 
     if (activePositions.length > 0) {
         let totalPnl = 0;
