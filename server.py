@@ -12,9 +12,9 @@ import urllib.parse
 
 PORT = 8000
 
-API_KEY = "ca05ef58-17a8-4e1a-96e8-8138e21dc4c0"
-SECRET_KEY = "9D1BD224E2C2FF59542FA065FFFE075C"
-PASSPHRASE = "King_939625"
+API_KEY = os.environ.get('API_KEY')
+SECRET_KEY = os.environ.get('SECRET_KEY')
+PASSPHRASE = os.environ.get('PASSPHRASE')
 
 class OKXHandler(http.server.SimpleHTTPRequestHandler):
     def do_GET(self):
