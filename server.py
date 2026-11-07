@@ -63,15 +63,14 @@ def ai_trading_bot():
 
 class OKHandler(http.server.SimpleHTTPRequestHandler):
     def do_GET(self):
-        if self.path == '/balance':
+        # Intercetta sia /balance che /api/balance per evitare errori 404
+        if self.path in ['/balance', '/api/balance']:
             self.send_response(200)
             self.send_header('Content-Type', 'application/json')
             self.send_header('Access-Control-Allow-Origin', '*')
             self.end_headers()
             
-            # Valore di fallback predefinito per evitare qualsiasi blocco della pagina
             bal_val = 21.89
-            
             try:
                 res_okx = okx_request('GET', '/api/v5/account/balance')
                 if res_okx.get('code') == '0' and res_okx.get('data'):
@@ -90,7 +89,8 @@ class OKHandler(http.server.SimpleHTTPRequestHandler):
             super().do_GET()
 
     def do_POST(self):
-        if self.path == '/trade':
+        # Intercetta sia /trade che /api/trade
+        if self.path in ['/trade', '/api/trade']:
             self.send_response(200)
             self.send_header('Content-Type', 'application/json')
             self.send_header('Access-Control-Allow-Origin', '*')
