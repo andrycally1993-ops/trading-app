@@ -19,11 +19,10 @@ PASSPHRASE = "King_939625"
 PORT = int(os.environ.get('PORT', 10000))
 
 def get_header(method, request_path, body=''):
-    """Genera le firme crittografiche richieste dalle API di OKX"""
+    """Genera le firme crittografiche richieste dalle API di OKX con timestamp ISO corretto"""
     try:
-        iso = datetime.datetime.utcnow().isoformat('T') + 'Z'
-        if iso.endswith('Z'):
-            iso = iso[:-1] + '.000Z'
+        # Timestamp UTC preciso nel formato ISO richiesto da OKX
+        iso = datetime.datetime.now(datetime.timezone.utc).strftime('%Y-%m-%dT%H:%M:%S.%f')[:-3] + 'Z'
         message = iso + method.upper() + request_path + body
         mac = hmac.new(bytes(SECRET_KEY, encoding='utf-8'), bytes(message, encoding='utf-8'), digestmod=hashlib.sha256)
         d = mac.digest()
@@ -63,7 +62,6 @@ def ai_trading_bot():
 
 class OKHandler(http.server.SimpleHTTPRequestHandler):
     def do_GET(self):
-        # Intercetta sia /balance che /api/balance per evitare errori 404
         if self.path in ['/balance', '/api/balance']:
             self.send_response(200)
             self.send_header('Content-Type', 'application/json')
@@ -89,7 +87,6 @@ class OKHandler(http.server.SimpleHTTPRequestHandler):
             super().do_GET()
 
     def do_POST(self):
-        # Intercetta sia /trade che /api/trade
         if self.path in ['/trade', '/api/trade']:
             self.send_response(200)
             self.send_header('Content-Type', 'application/json')
