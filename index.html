@@ -290,7 +290,6 @@ function updateMarketData() {
     document.getElementById('reliabilityText').innerText = reliability + '%';
     document.getElementById('reliabilityBar').style.width = reliability + '%';
 
-    // Autopilot attivo solo se spunti la casella manualmente
     const isAutopilotActive = document.getElementById('autopilotToggle').checked;
     if (isAutopilotActive && Math.random() > 0.85 && activePositions.length === 0) {
         const signal = document.getElementById('aiSignalBox').innerText;
