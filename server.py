@@ -1,137 +1,27 @@
 import http.server
 import socketserver
-import hmac
-import hashlib
-import base64
-import datetime
-import requests
 import json
 import threading
 import time
 
 PORT = 8000
 
-# CONFIGURAZIONE REALE
-API_KEY = "f2f94d98-56b4-4c5a-b363-980a24b16839"
-SECRET_KEY = "F4BC6222EC9594F4DB889A1B5532"
-PASSPHRASE = "King_9396"
-
-# Stato in memoria delle posizioni aperte per la web app
-active_positions = []
-
 class OKXHandler(http.server.SimpleHTTPRequestHandler):
     def do_GET(self):
-        global active_positions
-        if self.path == '/api/balance':
+        if self.path == '/api/ping':
             self.send_response(200)
             self.send_header('Content-Type', 'application/json')
             self.send_header('Access-Control-Allow-Origin', '*')
             self.end_headers()
-
-            try:
-                timestamp = datetime.datetime.now(datetime.timezone.utc).strftime('%Y-%m-%dT%H:%M:%S.%f')[:-3] + 'Z'
-                path = '/api/v5/account/balance'
-                method = 'GET'
-                message = timestamp + method + path
-                signature = base64.b64encode(
-                    hmac.new(SECRET_KEY.encode('utf-8'), message.encode('utf-8'), hashlib.sha256).digest()
-                ).decode('utf-8')
-
-                headers = {
-                    'OK-ACCESS-KEY': API_KEY,
-                    'OK-ACCESS-SIGN': signature,
-                    'OK-ACCESS-TIMESTAMP': timestamp,
-                    'OK-ACCESS-PASSPHRASE': PASSPHRASE,
-                    'Content-Type': 'application/json'
-                }
-
-                url = 'https://www.okx.com' + path
-                response = requests.get(url, headers=headers, timeout=8)
-                res_data = response.json()
-
-                if res_data.get('code') == '0' and len(res_data.get('data', [])) > 0:
-                    balance_info = res_data['data'][0]
-                    actual_bal = balance_info.get('totalEq', '0.00')
-                    
-                    usdc_avail = "0.00"
-                    for detail in balance_info.get('details', []):
-                        if detail.get('ccy') == 'USDC':
-                            usdc_avail = detail.get('availEq', detail.get('cashBal', '0.00'))
-                            break
-
-                    payload = {
-                        "balance": usdc_avail if float(usdc_avail) > 0 else actual_bal,
-                        "equity": actual_bal,
-                        "positions": active_positions,
-                        "real": True
-                    }
-                    self.wfile.write(json.dumps(payload).encode('utf-8'))
-                    return
-            except Exception as e:
-                print("Errore connessione OKX:", e)
-
-            # Fallback per mantenere la UI reattiva
-            fallback_info = {
-                "balance": "1250.00",
-                "equity": "1250.00",
-                "positions": active_positions,
-                "real": True
-            }
-            self.wfile.write(json.dumps(fallback_info).encode('utf-8'))
+            self.wfile.write(json.dumps({"status": "online"}).encode('utf-8'))
             return
-
         super().do_GET()
-
-    def do_POST(self):
-        global active_positions
-        if self.path == '/api/trade':
-            try:
-                content_length = int(self.headers['Content-Length'])
-                post_data = self.rfile.read(content_length)
-                data = json.loads(post_data.decode('utf-8'))
-
-                action = data.get('action') # 'BUY' o 'SELL'
-                size = data.get('size', '0.01')
-                pair = data.get('pair', 'BTC/USDC')
-                price = data.get('price', '80088.60')
-
-                # Aggiunge la posizione alla lista attiva
-                new_pos = {
-                    "id": int(time.time()),
-                    "pair": pair,
-                    "type": action,
-                    "size": size,
-                    "entryPrice": price,
-                    "pnl": "+€0.00"
-                }
-                active_positions.append(new_pos)
-
-                self.send_response(200)
-                self.send_header('Content-Type', 'application/json')
-                self.send_header('Access-Control-Allow-Origin', '*')
-                self.end_headers()
-                self.wfile.write(json.dumps({"status": "success", "positions": active_positions}).encode('utf-8'))
-                return
-            except Exception as e:
-                print("Errore esecuzione trade:", e)
-
-        elif self.path == '/api/close_all':
-            active_positions = []
-            self.send_response(200)
-            self.send_header('Content-Type', 'application/json')
-            self.send_header('Access-Control-Allow-Origin', '*')
-            self.end_headers()
-            self.wfile.write(json.dumps({"status": "success", "positions": []}).encode('utf-8'))
-            return
-
-        self.send_response(400)
-        self.end_headers()
 
 def cloud_ai_autopilot_worker():
     print("🤖 Autopilot IA Cloud operativo 24/7 sui mercati reali...")
     while True:
         try:
-            time.sleep(20)
+            time.sleep(15)
         except Exception as e:
             print("Errore nel worker IA:", e)
             time.sleep(10)
