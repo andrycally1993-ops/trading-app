@@ -12,12 +12,12 @@ import time
 
 PORT = int(os.environ.get('PORT', 8000))
 
-API_KEY = os.environ.get('API_KEY')
-SECRET_KEY = os.environ.get('SECRET_KEY')
-PASSPHRASE = os.environ.get('PASSPHRASE')
+# Pulisce eventuali spazi accidentali nelle variabili d'ambiente
+API_KEY = os.environ.get('API_KEY', '').strip()
+SECRET_KEY = os.environ.get('SECRET_KEY', '').strip()
+PASSPHRASE = os.environ.get('PASSPHRASE', '').strip()
 
 def get_header(method, request_path, body=''):
-    # Formato timestamp rigoroso richiesto dalle API v5 di OKX (con millisecondi e UTC 'Z')
     utc_time = datetime.datetime.now(datetime.timezone.utc).isoformat(timespec='milliseconds').replace('+00:00', 'Z')
     message = utc_time + method.upper() + request_path + body
     mac = hmac.new(bytes(SECRET_KEY, encoding='utf-8'), bytes(message, encoding='utf-8'), digestmod=hashlib.sha256)
@@ -28,13 +28,12 @@ def get_header(method, request_path, body=''):
         'OK-ACCESS-SIGN': sign,
         'OK-ACCESS-TIMESTAMP': utc_time,
         'OK-ACCESS-PASSPHRASE': PASSPHRASE,
-        'OK-ACCESS-FLAG': '0',
+        'OK-ACCESS-FLAG': '0',  # '0' per il conto reale live
         'Content-Type': 'application/json'
     }
     return header
 
 def send_okx_order(pair='BTC-USDC', side='buy', size='0.001'):
-    """Esegue l'ordine reale su OKX v5."""
     try:
         okx_order_body = {
             "instId": pair,
@@ -54,14 +53,13 @@ def send_okx_order(pair='BTC-USDC', side='buy', size='0.001'):
         return {"code": "-1", "msg": str(e)}
 
 # -------------------------------------------------------------
-# MOTORE AUTOPILOT IA 24/7 ATTIVO
+# MOTORE AUTOPILOT IA 24/7
 # -------------------------------------------------------------
 def ai_autopilot_loop():
     print("🤖 Motore Autopilot IA avviato in background 24/7...")
     while True:
         try:
             time.sleep(60)
-            # Esecuzione automatica in background gestita dall'IA
         except Exception as e:
             print(f"Errore loop IA Autopilot: {e}")
             time.sleep(30)
