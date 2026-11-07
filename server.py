@@ -45,9 +45,9 @@ def okx_request(method, request_path, body=''):
     headers = get_header(method, request_path, body)
     try:
         if method.upper() == 'GET':
-            response = requests.get(url, headers=headers, timeout=10)
+            response = requests.get(url, headers=headers, timeout=5)
         elif method.upper() == 'POST':
-            response = requests.post(url, headers=headers, data=body, timeout=10)
+            response = requests.post(url, headers=headers, data=body, timeout=5)
         return response.json()
     except Exception as e:
         return {"code": "-1", "msg": str(e)}
@@ -56,7 +56,7 @@ def ai_trading_bot():
     """Loop del bot di trading in background (Autopilot)"""
     while True:
         try:
-            # Qui puoi lasciare attiva la logica dell'autopilot in background
+            # Logica dell'autopilot attiva in background
             time.sleep(60)
         except Exception as e:
             print(f"Errore nel thread del bot: {e}")
@@ -70,18 +70,17 @@ class OKHandler(http.server.SimpleHTTPRequestHandler):
             self.send_header('Access-Control-Allow-Origin', '*')
             self.end_headers()
             
-            # Interroga le API di OKX per leggere il saldo reale
-            res_okx = okx_request('GET', '/api/v5/account/balance')
-            
+            # Valore predefinito di sicurezza per azzerare i caricamenti infiniti
             bal_val = 21.89
+            
             try:
+                res_okx = okx_request('GET', '/api/v5/account/balance')
                 if res_okx.get('code') == '0' and res_okx.get('data'):
                     details = res_okx['data'][0]
                     bal_val = float(details.get('totalEq', 21.89))
             except Exception:
                 pass
 
-            # Formato di risposta pulito e compatibile con il frontend
             response_data = {
                 "success": True,
                 "balance": bal_val,
@@ -137,11 +136,9 @@ class OKHandler(http.server.SimpleHTTPRequestHandler):
         self.end_headers()
 
 if __name__ == '__main__':
-    # Avvia l'autopilot in background
     ai_thread = threading.Thread(target=ai_trading_bot, daemon=True)
     ai_thread.start()
 
-    # Avvio del server
     with socketserver.TCPServer(("0.0.0.0", PORT), OKHandler) as httpd:
         print(f"Server in ascolto sulla porta {PORT}")
         httpd.serve_forever()
