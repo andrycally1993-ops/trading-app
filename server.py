@@ -11,12 +11,38 @@ import time
 
 PORT = 8000
 
+# Credenziali predefinite
 API_KEY = "f2f94d98-56b4-4c5a-b363-980a24b16839"
 SECRET_KEY = "F4BC6222EC9594F4DB889A1B5532"
 PASSPHRASE = "King_9396"
 
 class OKXHandler(http.server.SimpleHTTPRequestHandler):
+    def do_POST(self):
+        global API_KEY, SECRET_KEY, PASSPHRASE
+        if self.path == '/api/config':
+            try:
+                content_length = int(self.headers['Content-Length'])
+                post_data = self.rfile.read(content_length)
+                data = json.loads(post_data.decode('utf-8'))
+
+                if data.get('apiKey'): API_KEY = data.get('apiKey').strip()
+                if data.get('secretKey'): SECRET_KEY = data.get('secretKey').strip()
+                if data.get('passphrase'): PASSPHRASE = data.get('passphrase').strip()
+
+                self.send_response(200)
+                self.send_header('Content-Type', 'application/json')
+                self.send_header('Access-Control-Allow-Origin', '*')
+                self.end_headers()
+                self.wfile.write(json.dumps({"status": "updated"}).encode('utf-8'))
+                return
+            except Exception as e:
+                print("Errore aggiornamento API:", e)
+
+        self.send_response(400)
+        self.end_headers()
+
     def do_GET(self):
+        global API_KEY, SECRET_KEY, PASSPHRASE
         if self.path == '/api/balance':
             self.send_response(200)
             self.send_header('Content-Type', 'application/json')
@@ -41,7 +67,7 @@ class OKXHandler(http.server.SimpleHTTPRequestHandler):
                 }
 
                 url = 'https://www.okx.com' + path
-                response = requests.get(url, headers=headers, timeout=4)
+                response = requests.get(url, headers=headers, timeout=5)
                 res_data = response.json()
 
                 if res_data.get('code') == '0' and len(res_data.get('data', [])) > 0:
@@ -63,12 +89,12 @@ class OKXHandler(http.server.SimpleHTTPRequestHandler):
                     self.wfile.write(json.dumps(payload).encode('utf-8'))
                     return
             except Exception as e:
-                print("Nota server OKX:", e)
+                print("Errore chiamata OKX:", e)
 
-            # Fallback immediato per mostrare subito operatività e saldo
+            # Fallback se le API OKX sono momentaneamente irraggiungibili o vuote
             fallback = {
-                "balance": "1000.00",
-                "equity": "1000.00",
+                "balance": "0.00",
+                "equity": "0.00",
                 "real": True
             }
             self.wfile.write(json.dumps(fallback).encode('utf-8'))
