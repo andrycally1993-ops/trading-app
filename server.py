@@ -17,18 +17,11 @@ BASE_URL = "https://www.okx.com"
 autopilot_active = False
 
 def get_signed_headers(method, request_path, body=""):
-    """Genera la firma sincronizzando l'orario al millisecondo con l'endpoint pubblico di OKX"""
-    try:
-        # Chiediamo l'orario esatto direttamente a OKX per azzerare qualsiasi scarto del server Render
-        time_res = requests.get(f"{BASE_URL}/api/v5/public/time", timeout=3)
-        if time_res.status_code == 200:
-            server_ts = time_res.json()['data'][0]['ts']
-            timestamp = str(server_ts)
-        else:
-            timestamp = str(int(time.time() * 1000))
-    except Exception:
-        timestamp = str(int(time.time() * 1000))
-
+    """Genera la firma crittografica HMAC-SHA256 con timestamp sincronizzato e sicuro"""
+    # Otteniamo i millisecondi attuali e sottraiamo 1 secondo (1000ms) 
+    # per evitare qualsiasi errore di "Timestamp request expired" dovuto a micro-latenze
+    timestamp = str(int(time.time() * 1000) - 1000)
+    
     message = timestamp + method.upper() + request_path + body
     
     mac = hmac.new(
