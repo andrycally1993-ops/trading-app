@@ -16,20 +16,28 @@ BASE_URL = "https://www.okx.com"
 autopilot_active = False
 
 def get_okx_server_time_diff():
-    """Sincronizzazione orario perfetta con i server OKX per evitare errori timestamp"""
+    """Sincronizzazione orario ultra-robusta con i server OKX"""
     try:
-        response = requests.get(f"{BASE_URL}/api/v5/public/time", timeout=5)
+        # Usiamo un timeout rapido e verifichiamo la risposta
+        response = requests.get(f"{BASE_URL}/api/v5/public/time", timeout=3)
         if response.status_code == 200:
-            server_time_ms = int(response.json()['data'][0]['ts'])
-            local_time_ms = int(time.time() * 1000)
-            return server_time_ms - local_time_ms
+            data = response.json()
+            if 'data' in data and len(data['data']) > 0:
+                server_time_ms = int(data['data'][0]['ts'])
+                local_time_ms = int(time.time() * 1000)
+                diff = server_time_ms - local_time_ms
+                print(f"Sincronizzazione OKX riuscita. Scarto orario: {diff} ms")
+                return diff
     except Exception as e:
-        print(f"Errore sync orario: {e}")
+        print(f"Avviso sync orario fallito: {e}. Uso fallback locale.")
     return 0
 
 def get_signed_headers(method, request_path, body=""):
+    """Genera la firma con correzione fissa di sicurezza per evitare scadenza timestamp"""
     time_diff = get_okx_server_time_diff()
-    timestamp = str(int(time.time() * 1000) + time_diff)
+    # Aggiungiamo un piccolo buffer di tolleranza di 500ms indietro per evitare 'Timestamp request expired'
+    timestamp = str(int(time.time() * 1000) + time_diff - 500)
+    
     message = timestamp + method.upper() + request_path + body
     
     mac = hmac.new(
@@ -55,8 +63,10 @@ def index():
 def check_balance():
     endpoint = "/api/v5/account/balance"
     headers = get_signed_headers("GET", endpoint)
+    url = BASE_URL + endpoint
     try:
-        response = requests.get(BASE_URL + endpoint, headers=headers, timeout=10)
+        response = requests.get(url, headers=headers, timeout=10)
+        print(f"Risposta Saldo OKX Status: {response.status_code}")
         return jsonify(response.json())
     except Exception as e:
         return jsonify({"code": "-1", "msg": str(e)}), 500
@@ -71,11 +81,33 @@ def toggle_autopilot():
 
 @app.route("/api/trade", methods=["POST"])
 def execute_trade():
+    """Invia un ordine reale a mercato su OKX (es. COMPRA / VENDI)"""
     data = request.get_json()
-    action = data.get("action")
-    print(f"--- Richiesta ordine manuale: {action} ---")
-    # Qui si collegherà l'endpoint OKX /api/v5/trade/order
-    return jsonify({"status": "success", "action": action, "msg": "Ordine inviato al server"})
+    action = data.get("action", "BUY")
+    symbol = data.get("symbol", "BTC-USDT")
+    
+    endpoint = "/api/v5/trade/order"
+    
+    # Corpo della richiesta per ordine a mercato (Market) su OKX
+    # (Esegue l'ordine immediato sul conto reale)
+    payload = {
+        "instId": symbol,
+        "tdMode": "cash",  # Modalità contanti / spot
+        "side": action.lower(), # 'buy' o 'sell'
+        "ordType": "market",
+        "sz": "0.0001"  # Quantità minima di test in BTC (regolabile)
+    }
+    
+    import json
+    body_str = json.dumps(payload)
+    headers = get_signed_headers("POST", endpoint, body_str)
+    
+    try:
+        response = requests.post(BASE_URL + endpoint, headers=headers, data=body_str, timeout=10)
+        print(f"Risposta Ordine OKX: {response.text}")
+        return jsonify(response.json())
+    except Exception as e:
+        return jsonify({"code": "-1", "msg": str(e)}), 500
 
 if __name__ == "__main__":
     port = int(os.environ.get("PORT", 5000))
