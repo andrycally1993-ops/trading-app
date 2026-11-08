@@ -15,7 +15,6 @@ PASSPHRASE = "King_939625"
 BASE_URL = "https://my.okx.com"
 
 def get_okx_time():
-    """Genera il timestamp nel formato ISO 8601 UTC richiesto dalle API OKX V5."""
     return datetime.datetime.now(datetime.timezone.utc).strftime('%Y-%m-%dT%H:%M:%S.%f')[:-3] + 'Z'
 
 def get_sign(timestamp, method, request_path, body=""):
