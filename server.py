@@ -1,4 +1,5 @@
 import time
+import datetime
 import base64
 import hmac
 import hashlib
@@ -14,9 +15,8 @@ PASSPHRASE = "King_939625"
 BASE_URL = "https://my.okx.com"
 
 def get_okx_time():
-    """Genera il timestamp con un offset di anticipo per compensare lo sfasamento del server cloud."""
-    # Aggiungiamo 2 secondi (2000 millisecondi) per evitare lo scaduto a causa del server Render
-    return str(int(time.time() * 1000) + 2000)
+    """Genera il timestamp nel formato ISO 8601 UTC richiesto dalle API OKX V5."""
+    return datetime.datetime.now(datetime.timezone.utc).strftime('%Y-%m-%dT%H:%M:%S.%f')[:-3] + 'Z'
 
 def get_sign(timestamp, method, request_path, body=""):
     message = timestamp + method.upper() + request_path + body
