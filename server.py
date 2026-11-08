@@ -14,7 +14,16 @@ PASSPHRASE = "King_939625"
 BASE_URL = "https://my.okx.com"
 
 def get_okx_time():
-    """Sincronizza l'orario con i server di OKX per evitare errori 50102."""
+    """Sincronizzazione orario millimetrica con i server ufficiali OKX."""
+    try:
+        # Interroga l'orario atomico globale di OKX
+        res = requests.get("https://www.okx.com/api/v5/public/time", timeout=3)
+        data = res.json()
+        if "data" in data and len(data["data"]) > 0:
+            return str(data["data"][0]["ts"])
+    except Exception:
+        pass
+    
     try:
         res = requests.get(BASE_URL + "/api/v5/public/time", timeout=3)
         data = res.json()
@@ -22,6 +31,7 @@ def get_okx_time():
             return str(data["data"][0]["ts"])
     except Exception:
         pass
+        
     return str(int(time.time() * 1000))
 
 def get_sign(timestamp, method, request_path, body=""):
@@ -95,14 +105,13 @@ def sell_crypto():
     headers = get_signed_headers("POST", endpoint, body_str)
     url = BASE_URL + endpoint
     try:
-        response = requests.post(url, headers=headers, data=body_str, timeout=10)
+        response.post(url, headers=headers, data=body_str, timeout=10)
         return jsonify(response.json())
     except Exception as e:
         return jsonify({"code": "1", "msg": str(e)}), 500
 
 @app.route("/api/autopilot", methods=["POST"])
 def autopilot():
-    """Gestisce l'attivazione o la disattivazione del sistema Autopilot."""
     data = request.json or {}
     action = data.get("action", False)
     return jsonify({
