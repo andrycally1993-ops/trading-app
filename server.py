@@ -17,11 +17,18 @@ BASE_URL = "https://www.okx.com"
 autopilot_active = False
 
 def get_signed_headers(method, request_path, body=""):
-    """Genera la firma HMAC-SHA256 con timestamp sicuro anti-scadenza"""
-    # Usiamo il tempo attuale in millisecondi sottraendo 2000 ms (2 secondi) 
-    # per rientrare perfettamente nella finestra di tolleranza di OKX ed evitare 'expired'
-    timestamp = str(int(time.time() * 1000) - 2000)
-    
+    """Genera la firma sincronizzando l'orario al millisecondo con l'endpoint pubblico di OKX"""
+    try:
+        # Chiediamo l'orario esatto direttamente a OKX per azzerare qualsiasi scarto del server Render
+        time_res = requests.get(f"{BASE_URL}/api/v5/public/time", timeout=3)
+        if time_res.status_code == 200:
+            server_ts = time_res.json()['data'][0]['ts']
+            timestamp = str(server_ts)
+        else:
+            timestamp = str(int(time.time() * 1000))
+    except Exception:
+        timestamp = str(int(time.time() * 1000))
+
     message = timestamp + method.upper() + request_path + body
     
     mac = hmac.new(
@@ -50,8 +57,6 @@ def check_balance():
     url = BASE_URL + endpoint
     try:
         response = requests.get(url, headers=headers, timeout=10)
-        print(f"Risposta Saldo OKX Status: {response.status_code}")
-        print(f"Contenuto: {response.text}")
         return jsonify(response.json())
     except Exception as e:
         return jsonify({"code": "-1", "msg": str(e)}), 500
@@ -61,7 +66,6 @@ def toggle_autopilot():
     global autopilot_active
     data = request.get_json()
     autopilot_active = data.get("active", False)
-    print(f"--- Autopilot impostato a: {autopilot_active} ---")
     return jsonify({"status": "success", "autopilot": autopilot_active})
 
 @app.route("/api/trade", methods=["POST"])
@@ -71,8 +75,6 @@ def execute_trade():
     symbol = data.get("symbol", "BTC-USDT")
     
     endpoint = "/api/v5/trade/order"
-    
-    # Invio ordine reale spot su OKX
     payload = {
         "instId": symbol,
         "tdMode": "cash",
@@ -86,7 +88,6 @@ def execute_trade():
     
     try:
         response = requests.post(BASE_URL + endpoint, headers=headers, data=body_str, timeout=10)
-        print(f"Risposta Ordine OKX: {response.text}")
         return jsonify(response.json())
     except Exception as e:
         return jsonify({"code": "-1", "msg": str(e)}), 500
