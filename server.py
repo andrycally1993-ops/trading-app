@@ -9,10 +9,10 @@ from flask import Flask, jsonify, request, render_template
 
 app = Flask(__name__)
 
-
+# Credenziali OKX inserite direttamente per stabilizzare la connessione
 API_KEY = "c3f9bfde-c611-4972-a203-79c5aa27cd88"
-SECRET_KEY = "19091AD9B5B41792FE66C79DF6B37BB"
-PASSPHRASE = "King_939625"
+SECRET_KEY = "19091AD9B5B41792FE066C79DF6B37BB"
+PASSPHRASE = "King_039625"
 
 BASE_URL = "https://www.okx.com"
 autopilot_active = False
@@ -57,12 +57,9 @@ def toggle_autopilot():
     global autopilot_active
     data = request.get_json()
     autopilot_active = data.get("active", False)
-    
-    # Logica Autopilot: quando è attivo, il backend simula/esegue il monitoraggio o l'ordine automatico
     return jsonify({
         "status": "success", 
-        "autopilot": autopilot_active, 
-        "message": "Autopilot attivo: monitoraggio e operazioni di mercato in corso."
+        "autopilot": autopilot_active
     })
 
 @app.route("/api/trade", methods=["POST"])
@@ -77,7 +74,7 @@ def execute_trade():
         "tdMode": "cash",
         "side": action.lower(),
         "ordType": "market",
-        "sz": "0.0001"  // Quantità minima di test per l'acquisto/vendita reale
+        "sz": "0.0001"
     }
     
     body_str = json.dumps(payload)
