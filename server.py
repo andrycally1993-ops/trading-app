@@ -14,24 +14,17 @@ PASSPHRASE = "King_939625"
 BASE_URL = "https://my.okx.com"
 
 def get_okx_time():
-    """Sincronizzazione orario millimetrica con i server ufficiali OKX."""
+    """Sincronizzazione oraria universale non bloccabile dai datacenter."""
     try:
-        # Interroga l'orario atomico globale di OKX
-        res = requests.get("https://www.okx.com/api/v5/public/time", timeout=3)
+        # Usa un server di tempo atomico mondiale in tempo reale
+        res = requests.get("https://worldtimeapi.org/api/timezone/Etc/UTC", timeout=3)
         data = res.json()
-        if "data" in data and len(data["data"]) > 0:
-            return str(data["data"][0]["ts"])
+        if "unixtime" in data:
+            return str(int(data["unixtime"] * 1000))
     except Exception:
         pass
     
-    try:
-        res = requests.get(BASE_URL + "/api/v5/public/time", timeout=3)
-        data = res.json()
-        if "data" in data and len(data["data"]) > 0:
-            return str(data["data"][0]["ts"])
-    except Exception:
-        pass
-        
+    # Fallback di sicurezza estrema
     return str(int(time.time() * 1000))
 
 def get_sign(timestamp, method, request_path, body=""):
@@ -105,7 +98,7 @@ def sell_crypto():
     headers = get_signed_headers("POST", endpoint, body_str)
     url = BASE_URL + endpoint
     try:
-        response.post(url, headers=headers, data=body_str, timeout=10)
+        response = requests.post(url, headers=headers, data=body_str, timeout=10)
         return jsonify(response.json())
     except Exception as e:
         return jsonify({"code": "1", "msg": str(e)}), 500
