@@ -8,11 +8,11 @@ from flask import Flask, render_template, request, jsonify
 
 app = Flask(__name__)
 
-API_KEY = "c3f9bfde-c611-4972-a293-79c5aa27cd88"
-SECRET_KEY = "19091AD9B5B411792FEE66C79DF6B37BB"
+API_KEY = "e059ce24-96a8-445d-b374-bfad44938d9c"
+SECRET_KEY = "1BFCDA6FEF287CAC00B8D96FD222EF4A"
 PASSPHRASE = "King_939625"
 
-BASE_URL = "https://www.okx.com"
+BASE_URL = "https://my.okx.com"
 
 def get_okx_time():
     return datetime.datetime.now(datetime.timezone.utc).strftime('%Y-%m-%dT%H:%M:%S.%f')[:-3] + 'Z'
