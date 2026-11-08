@@ -3,6 +3,7 @@ import datetime
 import base64
 import hmac
 import hashlib
+import json
 import requests
 from flask import Flask, render_template, request, jsonify
 
@@ -53,6 +54,18 @@ def check_balance():
     except Exception as e:
         return jsonify({"code": "1", "msg": str(e)}), 500
 
+# NUOVA ROTTA DEDICATA ALLE POSIZIONI APERTE (Non tocca nulla del resto)
+@app.route("/api/positions", methods=["GET"])
+def get_positions():
+    endpoint = "/api/v5/account/positions?instType=SPOT"
+    headers = get_signed_headers("GET", endpoint)
+    url = BASE_URL + endpoint
+    try:
+        response = requests.get(url, headers=headers, timeout=10)
+        return jsonify(response.json())
+    except Exception as e:
+        return jsonify({"code": "1", "msg": str(e)}), 500
+
 @app.route("/api/buy", methods=["POST"])
 def buy_crypto():
     endpoint = "/api/v5/trade/order"
@@ -63,7 +76,6 @@ def buy_crypto():
         "ordType": "market",
         "sz": request.json.get("size", "0.001")
     }
-    import json
     body_str = json.dumps(payload)
     headers = get_signed_headers("POST", endpoint, body_str)
     url = BASE_URL + endpoint
@@ -83,7 +95,6 @@ def sell_crypto():
         "ordType": "market",
         "sz": request.json.get("size", "0.001")
     }
-    import json
     body_str = json.dumps(payload)
     headers = get_signed_headers("POST", endpoint, body_str)
     url = BASE_URL + endpoint
