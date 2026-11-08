@@ -22,7 +22,6 @@
                 <div class="card p-3 mb-3">
                     <h5 class="mb-3">Grafico BTC-USDC</h5>
                     <div id="tradingview_widget" style="height: 400px; background: #000; display: flex; align-items: center; justify-content: center; color: #666; border-radius: 4px;">
-                        <!-- Qui puoi integrare TradingView o il widget grafico originale -->
                         Visualizzazione Grafico Candele
                     </div>
                 </div>
@@ -98,3 +97,41 @@
         function executeOrder(side) {
             let size = document.getElementById('order-size').value;
             let url = side === 'buy' ? '/api/buy' : '/api/sell';
+            
+            fetch(url, {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ size: size })
+            })
+            .then(res => res.json())
+            .then(data => {
+                logResponse(data);
+                checkBalance();
+            })
+            .catch(err => {
+                document.getElementById('api-log').innerText = "Errore ordine: " + err;
+            });
+        }
+
+        function toggleAutopilot() {
+            autopilotActive = !autopilotActive;
+            let statusEl = document.getElementById('autopilot-status');
+            statusEl.innerText = autopilotActive ? "ATTIVO" : "DISATTIVATO";
+            statusEl.className = autopilotActive ? "fw-bold mb-3 text-success" : "fw-bold mb-3 text-danger";
+
+            fetch('/api/autopilot', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ action: autopilotActive })
+            })
+            .then(res => res.json())
+            .then(data => logResponse(data))
+            .catch(err => logResponse({ error: err }));
+        }
+
+        window.onload = function() {
+            checkBalance();
+        };
+    </script>
+</body>
+</html>
