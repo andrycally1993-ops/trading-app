@@ -19,7 +19,7 @@ BASE_URL = "https://www.okx.com"
 
 def get_signed_headers(method, request_path, body=""):
     """Genera la firma crittografica HMAC-SHA256 richiesta da OKX V5"""
-    timestamp = datetime.utcnow().isoformat() + "Z"
+    timestamp = str(int(time.time() * 1000))
     message = timestamp + method.upper() + request_path + body
     
     mac = hmac.new(
@@ -39,7 +39,7 @@ def get_signed_headers(method, request_path, body=""):
 
 @app.route("/")
 def index():
-    # Restituisce la pagina principale dell'app (assicurati che il file HTML sia nella cartella templates)
+    # Restituisce la pagina principale dalla cartella templates
     return render_template("index.html")
 
 @app.route("/api/balance", methods=["GET"])
@@ -61,8 +61,6 @@ def check_balance():
     except Exception as e:
         print(f"Errore di connessione a OKX: {str(e)}")
         return jsonify({"code": "-1", "msg": str(e)}), 500
-
-# Aggiungi qui sotto le tue eventuali altre rotte per gli ordini (POST /api/trade, ecc.)
 
 if __name__ == "__main__":
     port = int(os.environ.get("PORT", 5000))
