@@ -3,48 +3,152 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Trading App - BTC/USDC</title>
+    <title>OKX Trading Dashboard</title>
     <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
     <style>
-        body { background-color: #121212; color: #fff; }
-        .card { background-color: #1e1e1e; border: 1px solid #333; }
-        pre { background: #0a0a0a !important; color: #0f0 !important; font-size: 12px; }
+        body { background-color: #0b0e11; color: #eaecef; font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif; }
+        .card { background-color: #181a20; border: 1px solid #2b313a; border-radius: 6px; }
+        .btn-success { background-color: #0ecb81; border: none; }
+        .btn-danger { background-color: #f6465d; border: none; }
+        pre { background: #0b0e11 !important; color: #0ecb81 !important; border: 1px solid #2b313a; }
     </style>
 </head>
 <body class="p-3">
-    <div class="container-fluid" style="max-width: 1200px;">
-        <h2 class="mb-4 text-center">🤖 Bot Trading BTC-USDC</h2>
-
+    <div class="container-fluid" style="max-width: 1400px;">
         <div class="row">
             <!-- Colonna Sinistra: Grafico e Log -->
-            <div class="col-lg-8 mb-3">
-                <!-- Sezione Grafico Candele -->
+            <div class="col-xl-8 mb-3">
+                <!-- Sezione Grafico Candele (TradingView Widget) -->
                 <div class="card p-3 mb-3">
-                    <h5 class="mb-3">Grafico BTC-USDC</h5>
-                    <div id="tradingview_widget" style="height: 400px; background: #000; display: flex; align-items: center; justify-content: center; color: #666; border-radius: 4px;">
-                        Visualizzazione Grafico Candele
+                    <div class="tradingview-widget-container" style="height: 450px; width: 100%;">
+                        <div id="tradingview_chart" style="height: 100%; width: 100%;"></div>
+                        <script type="text/javascript" src="https://s3.tradingview.com/tv.js"></script>
+                        <script type="text/javascript">
+                            new TradingView.widget({
+                                "width": "100%",
+                                "height": "450",
+                                "symbol": "OKX:BTCUSDC",
+                                "interval": "15",
+                                "timezone": "Europe/Rome",
+                                "theme": "dark",
+                                "style": "1",
+                                "locale": "it",
+                                "toolbar_bg": "#f1f3f6",
+                                "enable_publishing": false,
+                                "hide_side_toolbar": false,
+                                "allow_symbol_change": true,
+                                "container_id": "tradingview_chart"
+                            });
+                        </script>
                     </div>
                 </div>
 
                 <!-- Sezione Log e Risposte API OKX -->
                 <div class="card p-3">
-                    <h5 class="mb-3">Log e Risposte API OKX</h5>
-                    <pre id="api-log" class="p-3 rounded mb-0" style="max-height: 200px; overflow-y: auto;">Pronto.</pre>
+                    <h6 class="text-muted mb-2">Log e Risposte API OKX</h6>
+                    <pre id="api-log" class="p-2 rounded mb-0" style="max-height: 180px; overflow-y: auto; font-size: 11px;">Pronto.</pre>
                 </div>
             </div>
 
-            <!-- Colonna Destra: Autopilot e Operazioni Rapide -->
-            <div class="col-lg-4">
+            <!-- Colonna Destra: Autopilot, Operazioni Rapide e Saldo -->
+            <div class="col-xl-4">
                 <!-- Sistema Autopilot -->
                 <div class="card p-3 mb-3">
-                    <h5 class="mb-3">Sistema Autopilot</h5>
-                    <p class="mb-1 text-muted">Stato Autopilot</p>
+                    <h6 class="text-muted mb-2">Sistema Autopilot</h6>
+                    <div class="mb-1 text-muted" style="font-size: 13px;">Stato Autopilot</div>
                     <div id="autopilot-status" class="fw-bold mb-3 text-danger">DISATTIVATO</div>
                     <button class="btn btn-outline-light w-100 btn-sm" onclick="toggleAutopilot()">Attiva / Disattiva</button>
                 </div>
 
                 <!-- Operazioni Rapide -->
                 <div class="card p-3 mb-3">
-                    <h5 class="mb-3">Operazioni Rapide</h5>
-                    <div class="mb-3">
-                        <label for="order-size" class="form-label text-muted">Quantità
+                    <h6 class="text-muted mb-2">Operazioni Rapide</h6>
+                    <div class="mb-2">
+                        <label for="order-size" class="form-label text-muted" style="font-size: 12px;">Quantità (sz):</label>
+                        <input type="text" id="order-size" class="form-control bg-dark text-white border-secondary form-control-sm" value="0.001">
+                    </div>
+                    <div class="d-grid gap-2">
+                        <button class="btn btn-success fw-bold py-2" onclick="executeOrder('buy')">COMPRA (Buy)</button>
+                        <button class="btn btn-danger fw-bold py-2" onclick="executeOrder('sell')">VENDI (Sell)</button>
+                    </div>
+                </div>
+
+                <!-- Saldo Reale USDC -->
+                <div class="card p-3">
+                    <h6 class="text-muted mb-2">Saldo Reale USDC</h6>
+                    <h4 id="balance-display" class="text-success mb-2">Caricamento...</h4>
+                    <button class="btn btn-secondary btn-sm w-100" onclick="checkBalance()">Aggiorna Saldo</button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        let autopilotActive = false;
+
+        function logResponse(data) {
+            document.getElementById('api-log').innerText = JSON.stringify(data, null, 2);
+        }
+
+        function checkBalance() {
+            fetch('/api/balance')
+                .then(res => res.json())
+                .then(data => {
+                    logResponse(data);
+                    try {
+                        let ccyBal = data.data[0].details.find(d => d.ccy === 'USDC');
+                        if (ccyBal) {
+                            document.getElementById('balance-display').innerText = ccyBal.availBal + " USDC";
+                        } else {
+                            document.getElementById('balance-display').innerText = "0 USDC";
+                        }
+                    } catch (e) {
+                        document.getElementById('balance-display').innerText = "0 USDC";
+                    }
+                })
+                .catch(err => {
+                    document.getElementById('api-log').innerText = "Errore di rete: " + err;
+                });
+        }
+
+        function executeOrder(side) {
+            let size = document.getElementById('order-size').value;
+            let url = side === 'buy' ? '/api/buy' : '/api/sell';
+            
+            fetch(url, {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ size: size })
+            })
+            .then(res => res.json())
+            .then(data => {
+                logResponse(data);
+                checkBalance();
+            })
+            .catch(err => {
+                document.getElementById('api-log').innerText = "Errore ordine: " + err;
+            });
+        }
+
+        function toggleAutopilot() {
+            autopilotActive = !autopilotActive;
+            let statusEl = document.getElementById('autopilot-status');
+            statusEl.innerText = autopilotActive ? "ATTIVO" : "DISATTIVATO";
+            statusEl.className = autopilotActive ? "fw-bold mb-3 text-success" : "fw-bold mb-3 text-danger";
+
+            fetch('/api/autopilot', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ action: autopilotActive })
+            })
+            .then(res => res.json())
+            .then(data => logResponse(data))
+            .catch(err => logResponse({ error: err }));
+        }
+
+        window.onload = function() {
+            checkBalance();
+        };
+    </script>
+</body>
+</html>
