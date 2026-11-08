@@ -14,17 +14,8 @@ PASSPHRASE = "King_939625"
 BASE_URL = "https://my.okx.com"
 
 def get_okx_time():
-    """Sincronizzazione oraria universale non bloccabile dai datacenter."""
-    try:
-        # Usa un server di tempo atomico mondiale in tempo reale
-        res = requests.get("https://worldtimeapi.org/api/timezone/Etc/UTC", timeout=3)
-        data = res.json()
-        if "unixtime" in data:
-            return str(int(data["unixtime"] * 1000))
-    except Exception:
-        pass
-    
-    # Fallback di sicurezza estrema
+    """Genera il timestamp esatto in millisecondi per OKX."""
+    # Restituisce il tempo attuale in millisecondi UTC esatto
     return str(int(time.time() * 1000))
 
 def get_sign(timestamp, method, request_path, body=""):
