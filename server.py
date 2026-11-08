@@ -1,9 +1,9 @@
 import os
-import time
 import hmac
 import base64
 import hashlib
 import json
+from datetime import datetime, timezone
 import requests
 from flask import Flask, jsonify, request, render_template
 
@@ -17,10 +17,9 @@ BASE_URL = "https://www.okx.com"
 autopilot_active = False
 
 def get_signed_headers(method, request_path, body=""):
-    """Genera la firma crittografica HMAC-SHA256 con timestamp sincronizzato e sicuro"""
-    # Otteniamo i millisecondi attuali e sottraiamo 1 secondo (1000ms) 
-    # per evitare qualsiasi errore di "Timestamp request expired" dovuto a micro-latenze
-    timestamp = str(int(time.time() * 1000) - 1000)
+    """Genera la firma HMAC-SHA256 con timestamp ISO 8601 UTC richiesto da OKX V5"""
+    # Formato esatto richiesto da OKX: es. 2026-11-08T11:30:00.000Z
+    timestamp = datetime.now(timezone.utc).isoformat(timespec='milliseconds').replace("+00:00", "Z")
     
     message = timestamp + method.upper() + request_path + body
     
