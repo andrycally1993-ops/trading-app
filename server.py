@@ -3,7 +3,6 @@ import time
 import hmac
 import base64
 import hashlib
-from datetime import datetime
 import requests
 from flask import Flask, jsonify, request, render_template
 
@@ -17,9 +16,25 @@ PASSPHRASE = os.getenv("PASSPHRASE", "").strip()
 # Endpoint ufficiale di produzione OKX (Conto Reale)
 BASE_URL = "https://www.okx.com"
 
+def get_okx_server_time_diff():
+    """Calcola lo scarto di tempo tra il server Render e i server ufficiali OKX"""
+    try:
+        response = requests.get(f"{BASE_URL}/api/v5/public/time", timeout=5)
+        if response.status_code == 200:
+            data = response.json()
+            server_time_ms = int(data['data'][0]['ts'])
+            local_time_ms = int(time.time() * 1000)
+            return server_time_ms - local_time_ms
+    except Exception as e:
+        print(f"Errore sincronizzazione orario OKX: {e}")
+    return 0  # Fallback a zero se la chiamata fallisce
+
 def get_signed_headers(method, request_path, body=""):
-    """Genera la firma crittografica HMAC-SHA256 richiesta da OKX V5"""
-    timestamp = str(int(time.time() * 1000))
+    """Genera la firma crittografica HMAC-SHA256 con timestamp sincronizzato con OKX"""
+    # Sincronizza il timestamp al millisecondo esatto usando l'orario ufficiale OKX
+    time_diff = get_okx_server_time_diff()
+    timestamp = str(int(time.time() * 1000) + time_diff)
+    
     message = timestamp + method.upper() + request_path + body
     
     mac = hmac.new(
@@ -44,7 +59,7 @@ def index():
 
 @app.route("/api/balance", methods=["GET"])
 def check_balance():
-    """Rotta di test per verificare la connessione e la lettura del saldo su OKX"""
+    """Rotta per verificare la connessione e leggere il saldo reale su OKX"""
     endpoint = "/api/v5/account/balance"
     headers = get_signed_headers("GET", endpoint)
     url = BASE_URL + endpoint
