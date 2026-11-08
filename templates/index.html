@@ -3,167 +3,108 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>OKX Trading Dashboard & Autopilot</title>
-    <!-- Charting Library TradingView -->
-    <script type="text/javascript" src="https://s3.tradingview.com/tv.js"></script>
-    <style>
-        * { box-sizing: border-box; margin: 0; padding: 0; }
-        body { font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; background-color: #0f172a; color: #f8fafc; padding: 20px; }
-        .header { display: flex; justify-content: space-between; align-items: center; padding-bottom: 20px; border-bottom: 1px solid #334155; margin-bottom: 20px; }
-        .card { background-color: #1e293b; border: 1px solid #334155; border-radius: 12px; padding: 20px; margin-bottom: 20px; }
-        .card h3 { margin-bottom: 15px; color: #94a3b8; font-size: 16px; }
-        .balance-box { font-size: 32px; font-weight: bold; color: #f8fafc; }
-        .btn { border: none; padding: 12px 20px; font-weight: bold; border-radius: 8px; cursor: pointer; transition: 0.2s; width: 100%; margin-top: 10px; }
-        .btn-buy { background-color: #22c55e; color: white; }
-        .btn-buy:hover { background-color: #16a34a; }
-        .btn-sell { background-color: #ef4444; color: white; }
-        .btn-sell:hover { background-color: #dc2626; }
-        .btn-sync { background-color: #3b82f6; color: white; }
-        .btn-sync:hover { background-color: #2563eb; }
-        .autopilot-container { display: flex; justify-content: space-between; align-items: center; background: #0f172a; padding: 15px; border-radius: 8px; margin-bottom: 15px; }
-        .switch { position: relative; display: inline-block; width: 50px; height: 26px; }
-        .switch input { opacity: 0; width: 0; height: 0; }
-        .slider { position: absolute; cursor: pointer; top: 0; left: 0; right: 0; bottom: 0; background-color: #475569; transition: .4s; border-radius: 34px; }
-        .slider:before { position: absolute; content: ""; height: 18px; width: 18px; left: 4px; bottom: 4px; background-color: white; transition: .4s; border-radius: 50%; }
-        input:checked + .slider { background-color: #22c55e; }
-        input:checked + .slider:before { transform: translateX(24px); }
-        #chart-container { height: 450px; border-radius: 8px; overflow: hidden; }
-        pre { background: #0f172a; padding: 12px; border-radius: 8px; font-size: 13px; color: #94a3b8; max-height: 200px; overflow-y: auto; }
-    </style>
+    <title>Trading App - BTC/USDC</title>
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
 </head>
-<body>
+<body class="bg-dark text-white p-4">
+    <div class="container" style="max-width: 600px;">
+        <h2 class="mb-4 text-center">🤖 Bot Trading BTC-USDC</h2>
 
-    <div class="header">
-        <div>
-            <h2>OKX Live Trading Dashboard</h2>
-            <p style="color: #94a3b8; font-size: 14px;">Connesso al conto reale OKX</p>
-        </div>
-        <div>
-            Stato Server: <span class="badge" id="online">ONLINE</span>
-        </div>
-    </div>
-
-    <div class="grid">
-        <!-- Colonna Sinistra: Grafico Candele TradingView -->
-        <div class="card">
-            <h3>Grafico Reale (BTC/USDC)</h3>
-            <div id="chart-container"></div>
+        <!-- Sezione Saldo Reale -->
+        <div class="card bg-secondary text-white mb-3 p-3">
+            <h5>Saldo Conto Reale</h5>
+            <h3 id="balance-display">Caricamento...</h3>
+            <button class="btn btn-light btn-sm mt-2" onclick="checkBalance()">Aggiorna Saldo Reale</button>
         </div>
 
-        <!-- Colonna Centrale: Log e Risposte API -->
-        <div class="card">
-            <h3>Log e Risposte API OKX</h3>
-            <pre id="log-output">Sistema pronto. Clicca su "Aggiorna Saldo Reale" per interrogare il conto.</pre>
-        </div>
-
-        <!-- Colonna Destra: Controlli, Saldo e Autopilot -->
-        <div class="card">
-            <h3>Saldo Conto Reale</h3>
-            <div class="balance-box" id="balance-display">--,-- USDC</div>
-            <button class="btn btn-sync" onclick="loadBalance()">Aggiorna Saldo Reale</button>
-        </div>
-
-        <div class="card">
-            <h3>Sistema Autopilot</h3>
-            <div class="autopilot-container">
-                <span id="autopilot-status">DISATTIVATO</span>
-                <label class="switch">
-                    <input type="checkbox" id="autopilot-toggle" onchange="toggleAutopilot(this)">
-                    <span class="slider"></span>
-                </label>
+        <!-- Sezione Comandi Rapidi (Compra / Vendi) -->
+        <div class="card bg-secondary text-white mb-3 p-3">
+            <h5>Azioni Rapide (Market)</h5>
+            <div class="mb-2">
+                <label for="order-size" class="form-label">Quantità (sz):</label>
+                <input type="text" id="order-size" class="form-control" value="0.001">
             </div>
-            <p style="font-size: 12px; color: #94a3b8; margin-top: 10px;" id="autopilot-status-text">Autopilot DISATTIVATO</p>
+            <div class="d-flex gap-2">
+                <button class="btn btn-success w-50" onclick="executeOrder('buy')">COMPRA (Buy)</button>
+                <button class="btn btn-danger w-50" onclick="executeOrder('sell')">VENDI (Sell)</button>
+            </div>
         </div>
 
-        <div class="card">
-            <h3>Operazioni Rapide</h3>
-            <button class="btn btn-buy" onclick="executeTrade('BUY')">COMPRA (Market)</button>
-            <button class="btn btn-sell" onclick="executeTrade('SELL')">VENDI (Market)</button>
+        <!-- NUOVA SEZIONE: Posizioni Aperte (Integrata e Pulita) -->
+        <div class="card bg-secondary text-white mb-3 p-3">
+            <h5>Posizioni Aperte / Asset</h5>
+            <button class="btn btn-light btn-sm mb-2" onclick="loadPositions()">Aggiorna Posizioni</button>
+            <pre id="positions-output" style="background:#111; color:#0f0; padding:10px; border-radius:5px; max-height:150px; overflow-y:auto; font-size: 12px; margin:0;"></pre>
+        </div>
+
+        <!-- Sezione Log e Risposte API OKX -->
+        <div class="card bg-secondary text-white p-3">
+            <h5>Log e Risposte API OKX</h5>
+            <pre id="api-log" style="background:#111; color:#0f0; padding:10px; border-radius:5px; max-height:200px; overflow-y:auto; font-size: 12px; margin:0;">Pronto.</pre>
         </div>
     </div>
 
     <script>
-        // Inizializzazione Grafico Candele TradingView in BTC-USDC
-        new TradingView.widget({
-            "autosize": true,
-            "symbol": "OKX:BTCUSDC",
-            "interval": "15",
-            "timezone": "Europe/Rome",
-            "theme": "dark",
-            "style": "1",
-            "locale": "it",
-            "toolbar_bg": "#1e293b",
-            "enable_publishing": false,
-            "allow_symbol_change": true,
-            "container_id": "chart-container"
-        });
+        function logResponse(data) {
+            document.getElementById('api-log').innerText = JSON.stringify(data, null, 2);
+        }
 
-        // Caricamento Saldo da Flask API (Filtro USDC)
-        function loadBalance() {
-            document.getElementById("log-output").innerText = "Richiesta saldo in corso...";
+        function checkBalance() {
             fetch('/api/balance')
                 .then(res => res.json())
                 .then(data => {
-                    document.getElementById("log-output").innerText = JSON.stringify(data, null, 4);
-                    if (data.data && data.data.length > 0) {
-                        let details = data.data[0].details;
-                        let usdc = details.find(d => d.ccy === 'USDC');
-                        if (usdc) {
-                            document.getElementById("balance-display").innerText = parseFloat(usdc.eq).toFixed(2) + ' USDC';
+                    logResponse(data);
+                    try {
+                        let ccyBal = data.data[0].details.find(d => d.ccy === 'USDC');
+                        if (ccyBal) {
+                            document.getElementById('balance-display').innerText = ccyBal.availBal + " USDC";
                         } else {
-                            document.getElementById("balance-display").innerText = '0.00 USDC';
+                            document.getElementById('balance-display').innerText = "0 USDC";
                         }
+                    } catch (e) {
+                        document.getElementById('balance-display').innerText = "Errore lettura saldo";
                     }
                 })
                 .catch(err => {
-                    document.getElementById("log-output").innerText = "Errore: " + err;
+                    document.getElementById('api-log').innerText = "Errore di rete: " + err;
                 });
         }
 
-        // Toggle Autopilot
-        function toggleAutopilot(checkbox) {
-            const isChecked = checkbox.checked;
-            const statusText = document.getElementById("autopilot-status-text");
-            const badge = document.getElementById("autopilot-status");
+        function executeOrder(side) {
+            let size = document.getElementById('order-size').value;
+            let url = side === 'buy' ? '/api/buy' : '/api/sell';
             
-            statusText.innerText = isChecked ? "Autopilot ATTIVO - Analisi mercato in corso..." : "Autopilot DISATTIVATO";
-            badge.innerText = isChecked ? "ATTIVO" : "DISATTIVATO";
-            
-            fetch('/api/autopilot', {
+            fetch(url, {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({ action: isChecked })
+                body: JSON.stringify({ size: size })
             })
             .then(res => res.json())
             .then(data => {
-                document.getElementById("log-output").innerText = JSON.stringify(data, null, 4);
+                logResponse(data);
+                checkBalance(); // Aggiorna il saldo dopo l'ordine
             })
             .catch(err => {
-                document.getElementById("log-output").innerText = "Errore: " + err;
+                document.getElementById('api-log').innerText = "Errore ordine: " + err;
             });
         }
 
-        // Operazioni manuali acquisto/vendite collegate a /api/buy e /api/sell
-        function executeTrade(action) {
-            const endpoint = action === 'BUY' ? '/api/buy' : '/api/sell';
-            document.getElementById("log-output").innerText = `Invio ordine ${action}...`;
-            fetch(endpoint, {
-                method: 'POST',
-                headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({ size: "0.001" })
-            })
-            .then(res => res.json())
-            .then(data => {
-                document.getElementById("log-output").innerText = JSON.stringify(data, null, 4);
-                loadBalance();
-            })
-            .catch(err => {
-                document.getElementById("log-output").innerText = "Errore: " + err;
-            });
+        function loadPositions() {
+            fetch('/api/positions')
+                .then(res => res.json())
+                .then(data => {
+                    document.getElementById('positions-output').innerText = JSON.stringify(data, null, 2);
+                    logResponse(data);
+                })
+                .catch(err => {
+                    document.getElementById('positions-output').innerText = "Errore: " + err;
+                });
         }
 
-        // Carica il saldo al primo avvio
-        loadBalance();
+        // Carica il saldo automaticamente all'avvio
+        window.onload = function() {
+            checkBalance();
+        };
     </script>
 </body>
 </html>
