@@ -9,7 +9,6 @@ from flask import Flask, jsonify, request, render_template
 
 app = Flask(__name__)
 
-# Credenziali OKX inserite direttamente per stabilizzare la connessione
 API_KEY = "c3f9bfde-c611-4972-a203-79c5aa27cd88"
 SECRET_KEY = "19091AD9B5B41792FE066C79DF6B37BB"
 PASSPHRASE = "King_039625"
@@ -34,7 +33,8 @@ def get_signed_headers(method, request_path, body=""):
         "OK-ACCESS-SIGN": signature,
         "OK-ACCESS-TIMESTAMP": timestamp,
         "OK-ACCESS-PASSPHRASE": PASSPHRASE,
-        "Content-Type": "application/json"
+        "Content-Type": "application/json",
+        "x-simulated-trading": "1"  # Attiva la modalità di test simulato per verificare le chiavi
     }
 
 @app.route("/")
