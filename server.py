@@ -14,7 +14,7 @@ PASSPHRASE = "King_939625"
 BASE_URL = "https://my.okx.com"
 
 def get_okx_time():
-    """Sincronizza l'orario direttamente con i server di OKX per evitare errori 50102."""
+    """Sincronizza l'orario con i server di OKX per evitare errori 50102."""
     try:
         res = requests.get(BASE_URL + "/api/v5/public/time", timeout=3)
         data = res.json()
@@ -99,6 +99,17 @@ def sell_crypto():
         return jsonify(response.json())
     except Exception as e:
         return jsonify({"code": "1", "msg": str(e)}), 500
+
+@app.route("/api/autopilot", methods=["POST"])
+def autopilot():
+    """Gestisce l'attivazione o la disattivazione del sistema Autopilot."""
+    data = request.json or {}
+    action = data.get("action", False)
+    return jsonify({
+        "status": "success", 
+        "autopilot": "active" if action else "inactive",
+        "msg": "Autopilot aggiornato con successo"
+    })
 
 if __name__ == "__main__":
     app.run(host="0.0.0.0", port=5000)
