@@ -13,7 +13,7 @@ API_KEY = "c3f9bfde-c611-4972-a203-79c5aa27cd88"
 SECRET_KEY = "19091AD9B5B41792FE066C79DF6B37BB"
 PASSPHRASE = "King_039625"
 
-BASE_URL = "https://www.okx.com"
+BASE_URL = "https://my.okx.com"
 autopilot_active = False
 
 def get_signed_headers(method, request_path, body=""):
