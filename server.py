@@ -9,9 +9,10 @@ from flask import Flask, jsonify, request, render_template
 
 app = Flask(__name__)
 
-API_KEY = os.getenv("API_KEY", "").strip()
-SECRET_KEY = os.getenv("SECRET_KEY", "").strip()
-PASSPHRASE = os.getenv("PASSPHRASE", "").strip()
+# Legge da Render pulendo automaticamente spazi o virgolette accidentali
+API_KEY = os.getenv("API_KEY", "").strip().strip('"\'')
+SECRET_KEY = os.getenv("SECRET_KEY", "").strip().strip('"\'')
+PASSPHRASE = os.getenv("PASSPHRASE", "").strip().strip('"\'')
 
 BASE_URL = "https://www.okx.com"
 autopilot_active = False
@@ -27,12 +28,6 @@ def get_signed_headers(method, request_path, body=""):
         hashlib.sha256
     )
     signature = base64.b64encode(mac.digest()).decode('utf-8')
-    
-    # Stampiamo nei log di Render i dati di verifica (senza mostrare la secret key)
-    print(f"--- DEBUG FIRMA ---")
-    print(f"Timestamp: {timestamp}")
-    print(f"API Key usata: {API_KEY[:6]}... (lunghezza: {len(API_KEY)})")
-    print(f"Path richiesto: {request_path}")
     
     return {
         "OK-ACCESS-KEY": API_KEY,
@@ -53,10 +48,9 @@ def check_balance():
     url = BASE_URL + endpoint
     try:
         response = requests.get(url, headers=headers, timeout=10)
-        print(f"Risposta OKX Balance: {response.status_code} - {response.text}")
+        print(f"Risposta Balance OKX: {response.status_code} - {response.text}")
         return jsonify(response.json())
     except Exception as e:
-        print(f"Eccezione balance: {e}")
         return jsonify({"code": "-1", "msg": str(e)}), 500
 
 @app.route("/api/autopilot", methods=["POST"])
@@ -86,7 +80,7 @@ def execute_trade():
     
     try:
         response = requests.post(BASE_URL + endpoint, headers=headers, data=body_str, timeout=10)
-        print(f"Risposta OKX Trade: {response.status_code} - {response.text}")
+        print(f"Risposta Trade OKX: {response.status_code} - {response.text}")
         return jsonify(response.json())
     except Exception as e:
         return jsonify({"code": "-1", "msg": str(e)}), 500
