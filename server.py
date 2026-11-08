@@ -34,7 +34,7 @@ def get_signed_headers(method, request_path, body=""):
         "OK-ACCESS-TIMESTAMP": timestamp,
         "OK-ACCESS-PASSPHRASE": PASSPHRASE,
         "Content-Type": "application/json",
-        "x-simulated-trading": "1"  # Attiva la modalità di test simulato per verificare le chiavi
+        "x-simulated-trading": "0"  # Attiva la modalità di test simulato per verificare le chiavi
     }
 
 @app.route("/")
