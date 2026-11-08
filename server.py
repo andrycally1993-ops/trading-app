@@ -14,9 +14,9 @@ PASSPHRASE = "King_939625"
 BASE_URL = "https://my.okx.com"
 
 def get_okx_time():
-    """Genera il timestamp esatto in millisecondi per OKX."""
-    # Restituisce il tempo attuale in millisecondi UTC esatto
-    return str(int(time.time() * 1000))
+    """Genera il timestamp con un offset di anticipo per compensare lo sfasamento del server cloud."""
+    # Aggiungiamo 2 secondi (2000 millisecondi) per evitare lo scaduto a causa del server Render
+    return str(int(time.time() * 1000) + 2000)
 
 def get_sign(timestamp, method, request_path, body=""):
     message = timestamp + method.upper() + request_path + body
