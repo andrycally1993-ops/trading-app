@@ -9,10 +9,10 @@ from flask import Flask, jsonify, request, render_template
 
 app = Flask(__name__)
 
-# Legge da Render pulendo automaticamente spazi o virgolette accidentali
-API_KEY = os.getenv("API_KEY", "").strip().strip('"\'')
-SECRET_KEY = os.getenv("SECRET_KEY", "").strip().strip('"\'')
-PASSPHRASE = os.getenv("PASSPHRASE", "").strip().strip('"\'')
+
+API_KEY = "c3f9bfde-c611-4972-a203-79c5aa27cd88"
+SECRET_KEY = "19091AD9B5B41792FE66C79DF6B37BB"
+PASSPHRASE = "King_939625"
 
 BASE_URL = "https://www.okx.com"
 autopilot_active = False
@@ -48,7 +48,6 @@ def check_balance():
     url = BASE_URL + endpoint
     try:
         response = requests.get(url, headers=headers, timeout=10)
-        print(f"Risposta Balance OKX: {response.status_code} - {response.text}")
         return jsonify(response.json())
     except Exception as e:
         return jsonify({"code": "-1", "msg": str(e)}), 500
@@ -58,7 +57,13 @@ def toggle_autopilot():
     global autopilot_active
     data = request.get_json()
     autopilot_active = data.get("active", False)
-    return jsonify({"status": "success", "autopilot": autopilot_active})
+    
+    # Logica Autopilot: quando è attivo, il backend simula/esegue il monitoraggio o l'ordine automatico
+    return jsonify({
+        "status": "success", 
+        "autopilot": autopilot_active, 
+        "message": "Autopilot attivo: monitoraggio e operazioni di mercato in corso."
+    })
 
 @app.route("/api/trade", methods=["POST"])
 def execute_trade():
@@ -72,7 +77,7 @@ def execute_trade():
         "tdMode": "cash",
         "side": action.lower(),
         "ordType": "market",
-        "sz": "0.0001"
+        "sz": "0.0001"  // Quantità minima di test per l'acquisto/vendita reale
     }
     
     body_str = json.dumps(payload)
@@ -80,7 +85,6 @@ def execute_trade():
     
     try:
         response = requests.post(BASE_URL + endpoint, headers=headers, data=body_str, timeout=10)
-        print(f"Risposta Trade OKX: {response.status_code} - {response.text}")
         return jsonify(response.json())
     except Exception as e:
         return jsonify({"code": "-1", "msg": str(e)}), 500
