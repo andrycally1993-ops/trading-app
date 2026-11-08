@@ -3,6 +3,7 @@ import time
 import hmac
 import base64
 import hashlib
+import json
 import requests
 from flask import Flask, jsonify, request, render_template
 
@@ -15,28 +16,11 @@ PASSPHRASE = os.getenv("PASSPHRASE", "").strip()
 BASE_URL = "https://www.okx.com"
 autopilot_active = False
 
-def get_okx_server_time_diff():
-    """Sincronizzazione orario ultra-robusta con i server OKX"""
-    try:
-        # Usiamo un timeout rapido e verifichiamo la risposta
-        response = requests.get(f"{BASE_URL}/api/v5/public/time", timeout=3)
-        if response.status_code == 200:
-            data = response.json()
-            if 'data' in data and len(data['data']) > 0:
-                server_time_ms = int(data['data'][0]['ts'])
-                local_time_ms = int(time.time() * 1000)
-                diff = server_time_ms - local_time_ms
-                print(f"Sincronizzazione OKX riuscita. Scarto orario: {diff} ms")
-                return diff
-    except Exception as e:
-        print(f"Avviso sync orario fallito: {e}. Uso fallback locale.")
-    return 0
-
 def get_signed_headers(method, request_path, body=""):
-    """Genera la firma con correzione fissa di sicurezza per evitare scadenza timestamp"""
-    time_diff = get_okx_server_time_diff()
-    # Aggiungiamo un piccolo buffer di tolleranza di 500ms indietro per evitare 'Timestamp request expired'
-    timestamp = str(int(time.time() * 1000) + time_diff - 500)
+    """Genera la firma HMAC-SHA256 con timestamp sicuro anti-scadenza"""
+    # Usiamo il tempo attuale in millisecondi sottraendo 2000 ms (2 secondi) 
+    # per rientrare perfettamente nella finestra di tolleranza di OKX ed evitare 'expired'
+    timestamp = str(int(time.time() * 1000) - 2000)
     
     message = timestamp + method.upper() + request_path + body
     
@@ -67,6 +51,7 @@ def check_balance():
     try:
         response = requests.get(url, headers=headers, timeout=10)
         print(f"Risposta Saldo OKX Status: {response.status_code}")
+        print(f"Contenuto: {response.text}")
         return jsonify(response.json())
     except Exception as e:
         return jsonify({"code": "-1", "msg": str(e)}), 500
@@ -81,24 +66,21 @@ def toggle_autopilot():
 
 @app.route("/api/trade", methods=["POST"])
 def execute_trade():
-    """Invia un ordine reale a mercato su OKX (es. COMPRA / VENDI)"""
     data = request.get_json()
     action = data.get("action", "BUY")
     symbol = data.get("symbol", "BTC-USDT")
     
     endpoint = "/api/v5/trade/order"
     
-    # Corpo della richiesta per ordine a mercato (Market) su OKX
-    # (Esegue l'ordine immediato sul conto reale)
+    # Invio ordine reale spot su OKX
     payload = {
         "instId": symbol,
-        "tdMode": "cash",  # Modalità contanti / spot
-        "side": action.lower(), # 'buy' o 'sell'
+        "tdMode": "cash",
+        "side": action.lower(),
         "ordType": "market",
-        "sz": "0.0001"  # Quantità minima di test in BTC (regolabile)
+        "sz": "0.0001"
     }
     
-    import json
     body_str = json.dumps(payload)
     headers = get_signed_headers("POST", endpoint, body_str)
     
