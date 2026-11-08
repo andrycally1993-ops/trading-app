@@ -25,7 +25,7 @@
 
     <script>
         function checkBalance() {
-            document.getElementById("result").innerText = "Caricamento in corso...";
+            document.getElementById("result").innerText = "Caricamento in corso e sincronizzazione...";
             fetch('/api/balance')
                 .then(response => response.json())
                 .then(data => {
