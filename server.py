@@ -13,6 +13,17 @@ PASSPHRASE = "King_939625"
 
 BASE_URL = "https://my.okx.com"
 
+def get_okx_time():
+    """Sincronizza l'orario direttamente con i server di OKX per evitare errori 50102."""
+    try:
+        res = requests.get(BASE_URL + "/api/v5/public/time", timeout=3)
+        data = res.json()
+        if "data" in data and len(data["data"]) > 0:
+            return str(data["data"][0]["ts"])
+    except Exception:
+        pass
+    return str(int(time.time() * 1000))
+
 def get_sign(timestamp, method, request_path, body=""):
     message = timestamp + method.upper() + request_path + body
     mac = hmac.new(
@@ -23,7 +34,7 @@ def get_sign(timestamp, method, request_path, body=""):
     return base64.b64encode(mac.digest()).decode('utf-8')
 
 def get_signed_headers(method, request_path, body=""):
-    timestamp = str(int(time.time() * 1000))
+    timestamp = get_okx_time()
     signature = get_sign(timestamp, method, request_path, body)
     return {
         "OK-ACCESS-KEY": API_KEY,
