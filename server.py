@@ -12,7 +12,7 @@ API_KEY = "c3f9bfde-c611-4972-a293-79c5aa27cd88"
 SECRET_KEY = "19091AD9B5B411792FEE66C79DF6B37BB"
 PASSPHRASE = "King_939625"
 
-BASE_URL = "https://my.okx.com"
+BASE_URL = "https://www.okx.com"
 
 def get_okx_time():
     return datetime.datetime.now(datetime.timezone.utc).strftime('%Y-%m-%dT%H:%M:%S.%f')[:-3] + 'Z'
