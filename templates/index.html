@@ -46,13 +46,13 @@
                     </div>
                 </div>
 
-                <!-- Sezione Posizioni Aperte (Stile Lista Pulita) -->
+                <!-- Sezione Posizioni Aperte -->
                 <div class="card p-3 mb-3">
                     <div class="d-flex justify-content-between align-items-center mb-2">
                         <h6 class="text-muted mb-0">Positions (Posizioni Aperte)</h6>
                         <div>
                             <button class="btn btn-outline-light btn-sm me-1" style="font-size: 11px;" onclick="loadPositions()">Aggiorna</button>
-                            <button class="btn btn-danger btn-sm" style="font-size: 11px;" onclick="closeAllPositions()">Chiudi Tutto</button>
+                            <button class="btn btn-danger btn-sm" style="font-size: 11px;" onclick="closeAllPositions()">Vendi Tutto</button>
                         </div>
                     </div>
                     <div id="positions-container" class="rounded" style="background:#0b0e11; border:1px solid #2b313a; min-height: 80px; max-height: 150px; overflow-y: auto;">
@@ -77,13 +77,12 @@
                     <button class="btn btn-outline-light w-100 btn-sm" onclick="toggleAutopilot()">Attiva / Disattiva</button>
                 </div>
 
-                <!-- Operazioni Rapide (Scelta Intelligente in USDC) -->
+                <!-- Operazioni Rapide -->
                 <div class="card p-3 mb-3">
                     <h6 class="text-muted mb-2">Operazioni Rapide (USDC)</h6>
                     <div class="mb-2">
-                        <label for="order-size" class="form-label text-muted" style="font-size: 12px;">Quanto vuoi spendere? (USDC):</label>
+                        <label for="order-size" class="form-label text-muted" style="font-size: 12px;">Importo da spendere (USDC):</label>
                         <input type="text" id="order-size" class="form-control bg-dark text-white border-secondary form-control-sm" value="12">
-                        <!-- Pulsanti rapidi intelligenti basati sul tuo saldo -->
                         <div class="mt-2">
                             <span class="text-muted" style="font-size: 11px;">Scegli budget:</span>
                             <button class="btn btn-sm budget-btn" onclick="setBudget(10)">10 USDC</button>
@@ -146,23 +145,29 @@
                 .then(data => {
                     logResponse(data);
                     let container = document.getElementById('positions-container');
-                    if (data.code === "0" && data.data && data.data.length > 0) {
-                        let html = "";
-                        data.data.forEach(order => {
-                            let sideColor = order.side === 'buy' ? 'text-success' : 'text-danger';
-                            html += `<div class="position-row">
-                                        <div>
-                                            <span class="fw-bold text-light">${order.instId}</span>, 
-                                            <span class="${sideColor} fw-bold">${order.side.toUpperCase()}</span> 
-                                            <span class="text-muted">Spend: ${order.sz} USDC</span>
-                                        </div>
-                                        <div>
-                                            <span class="text-warning">Prezzo: ${order.px || 'Market'}</span>
-                                        </div>
-                                     </div>`;
-                        });
-                        container.innerHTML = html;
-                    } else {
+                    try {
+                        let details = data.data[0].details;
+                        let activePositions = details.filter(d => parseFloat(d.availBal) > 0 && d.ccy !== 'USDC' && d.ccy !== 'USDT');
+                        
+                        if (activePositions.length > 0) {
+                            let html = "";
+                            activePositions.forEach(pos => {
+                                html += `<div class="position-row">
+                                            <div>
+                                                <span class="fw-bold text-light">${pos.ccy}-USDC</span>, 
+                                                <span class="text-success fw-bold">BUY</span> 
+                                                <span class="text-muted">Qt: ${parseFloat(pos.availBal).toFixed(4)}</span>
+                                            </div>
+                                            <div>
+                                                <span class="text-warning">Attiva</span>
+                                            </div>
+                                         </div>`;
+                            });
+                            container.innerHTML = html;
+                        } else {
+                            container.innerHTML = '<div class="p-2 text-muted" style="font-size:12px;">Nessuna posizione aperta.</div>';
+                        }
+                    } catch (e) {
                         container.innerHTML = '<div class="p-2 text-muted" style="font-size:12px;">Nessuna posizione aperta.</div>';
                     }
                 })
@@ -172,6 +177,7 @@
         }
 
         function closeAllPositions() {
+            if(!confirm("Vuoi davvero vendere tutto e convertire in USDC?")) return;
             fetch('/api/close-positions', {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
@@ -180,8 +186,9 @@
             .then(res => res.json())
             .then(data => {
                 logResponse(data);
-                loadPositions();
+                alert("Operazione di vendita completata!");
                 checkBalance();
+                loadPositions();
             })
             .catch(err => {
                 document.getElementById('api-log').innerText = "Errore chiusura: " + err;
@@ -191,11 +198,12 @@
         function executeOrder(side) {
             let size = document.getElementById('order-size').value;
             let url = side === 'buy' ? '/api/buy' : '/api/sell';
-            
+            let payload = side === 'buy' ? { instId: "BTC-USDC", size: size } : { instId: "BTC-USDC" };
+
             fetch(url, {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({ instId: "BTC-USDC", size: size })
+                body: JSON.stringify(payload)
             })
             .then(res => res.json())
             .then(data => {
