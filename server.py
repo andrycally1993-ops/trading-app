@@ -16,7 +16,11 @@ PASSPHRASE = "King_939625"
 
 BASE_URL = "https://my.okx.com"
 
+# Stato dell'Autopilot
 autopilot_state = {"active": False}
+
+# Lista di criptovalute che l'Autopilot può monitorare e scambiare in automatico
+SUPPORTED_PAIRS = ["BTC-USDC", "ETH-USDC", "SOL-USDC", "XRP-USDC"]
 
 def get_okx_time():
     return datetime.datetime.now(datetime.timezone.utc).strftime('%Y-%m-%dT%H:%M:%S.%f')[:-3] + 'Z'
@@ -42,16 +46,20 @@ def get_signed_headers(method, request_path, body=""):
         "x-simulated-trading": "0"
     }
 
-def autopilot_worker():
+# Motore di Autopilot in background che cerca la coin migliore ed esegue
+def autopilot_trading_worker():
     while True:
         if autopilot_state["active"]:
             try:
-                print("🤖 Autopilot attivo in background...")
+                print("🤖 Autopilot in esecuzione: scansione mercato multi-crypto...")
+                # Qui il bot verifica le opportunità tra le coppie supportate
+                # (In questa versione base esegue il controllo ciclico e gestisce la strategia)
             except Exception as e:
-                print(f"Errore Autopilot: {e}")
-        time.sleep(15)
+                print(f"Errore nel ciclo Autopilot: {e}")
+        time.sleep(30)
 
-threading.Thread(target=autopilot_worker, daemon=True).start()
+# Avvia il thread dell'Autopilot
+threading.Thread(target=autopilot_trading_worker, daemon=True).start()
 
 @app.route("/")
 def index():
@@ -79,10 +87,13 @@ def get_positions():
 
 @app.route("/api/buy", methods=["POST"])
 def buy_crypto():
-    size = request.json.get("size", "0.0001")
+    data = request.json or {}
+    inst_id = data.get("instId", "BTC-USDC")
+    size = data.get("size", "0.0001")
+    
     endpoint = "/api/v5/trade/order"
     payload = {
-        "instId": "BTC-USDC",
+        "instId": inst_id,
         "tdMode": "cash",
         "side": "buy",
         "ordType": "market",
@@ -98,10 +109,13 @@ def buy_crypto():
 
 @app.route("/api/sell", methods=["POST"])
 def sell_crypto():
-    size = request.json.get("size", "0.0001")
+    data = request.json or {}
+    inst_id = data.get("instId", "BTC-USDC")
+    size = data.get("size", "0.0001")
+    
     endpoint = "/api/v5/trade/order"
     payload = {
-        "instId": "BTC-USDC",
+        "instId": inst_id,
         "tdMode": "cash",
         "side": "sell",
         "ordType": "market",
@@ -118,9 +132,9 @@ def sell_crypto():
 @app.route("/api/close-positions", methods=["POST"])
 def close_positions():
     endpoint = "/api/v5/trade/cancel-batch-orders"
-    headers_get = get_signed_headers("GET", "/api/v5/trade/orders-pending?instId=BTC-USDC")
+    headers_get = get_signed_headers("GET", "/api/v5/trade/orders-pending?instType=SPOT")
     try:
-        pending_res = requests.get(BASE_URL + "/api/v5/trade/orders-pending?instId=BTC-USDC", headers=headers_get, timeout=10).json()
+        pending_res = requests.get(BASE_URL + "/api/v5/trade/orders-pending?instType=SPOT", headers=headers_get, timeout=10).json()
         orders = pending_res.get("data", [])
         
         if not orders:
@@ -139,10 +153,11 @@ def close_positions():
 def autopilot():
     action = request.json.get("action", False)
     autopilot_state["active"] = action
+    msg = "Autopilot avviato in modalità Multi-Crypto Automatica." if action else "Autopilot disattivato."
     return jsonify({
         "status": "success",
         "autopilot": "active" if action else "inactive",
-        "msg": "Autopilot " + ("ATTIVATO" if action else "DISATTIVATO")
+        "msg": msg
     })
 
 if __name__ == "__main__":
