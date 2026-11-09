@@ -16,7 +16,6 @@ PASSPHRASE = "King_939625"
 
 BASE_URL = "https://my.okx.com"
 
-# Stato globale dell'Autopilot
 autopilot_state = {"active": False}
 
 def get_okx_time():
@@ -43,19 +42,15 @@ def get_signed_headers(method, request_path, body=""):
         "x-simulated-trading": "0"
     }
 
-# Funzione in background che gira continuamente quando l'Autopilot è attivo
 def autopilot_background_worker():
     while True:
         if autopilot_state["active"]:
             try:
-                print("🤖 Autopilot in esecuzione: controllo mercato BTC-USDC...")
-                # Qui puoi inserire la logica di controllo o test periodico (es. ogni 30 secondi)
-                # Ad esempio, verifica del prezzo o esecuzione automatica condizionata
+                print("🤖 Autopilot attivo: monitoraggio di mercato in corso...")
             except Exception as e:
-                print(f"Errore nel worker dell'Autopilot: {e}")
-        time.sleep(30) # Controlla ogni 30 secondi
+                print(f"Errore Autopilot: {e}")
+        time.sleep(30)
 
-# Avvia il thread in background all'avvio del server
 worker_thread = threading.Thread(target=autopilot_background_worker, daemon=True)
 worker_thread.start()
 
@@ -76,12 +71,19 @@ def check_balance():
 
 @app.route("/api/positions", methods=["GET"])
 def get_positions():
-    endpoint = "/api/v5/trade/orders-pending?instType=SPOT"
+    # Legge direttamente i dettagli degli asset in portafoglio (USDC, BTC, ecc.)
+    endpoint = "/api/v5/account/balance"
     headers = get_signed_headers("GET", endpoint)
     url = BASE_URL + endpoint
     try:
         response = requests.get(url, headers=headers, timeout=10)
-        return jsonify(response.json())
+        data = response.json()
+        # Filtriamo per mostrare solo le coin con saldo attivo maggiore di zero
+        if "data" in data and len(data["data"]) > 0:
+            details = data["data"][0].get("details", [])
+            active_assets = [d for d in details if float(d.get("eq", 0)) > 0]
+            return jsonify({"code": "0", "active_assets": active_assets, "raw": data})
+        return jsonify(data)
     except Exception as e:
         return jsonify({"code": "1", "msg": str(e)}), 500
 
@@ -113,7 +115,7 @@ def buy_crypto():
         "tdMode": "cash",
         "side": "buy",
         "ordType": "market",
-        "sz": request.json.get("size", "0.001")
+        "sz": request.json.get("size", "0.0002")
     }
     body_str = json.dumps(payload)
     headers = get_signed_headers("POST", endpoint, body_str)
@@ -132,7 +134,7 @@ def sell_crypto():
         "tdMode": "cash",
         "side": "sell",
         "ordType": "market",
-        "sz": request.json.get("size", "0.001")
+        "sz": request.json.get("size", "0.0002")
     }
     body_str = json.dumps(payload)
     headers = get_signed_headers("POST", endpoint, body_str)
