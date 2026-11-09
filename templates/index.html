@@ -19,7 +19,7 @@
 <body class="p-3">
     <div class="container-fluid" style="max-width: 1400px;">
         <div class="row">
-            <!-- Colonna Sinistra: Grafico, Posizioni e Log -->
+            <!-- Colonna Sinistra: Grafico, Posizioni stile MetaTrader e Log -->
             <div class="col-xl-8 mb-3">
                 <!-- Sezione Grafico Candele -->
                 <div class="card p-3 mb-3">
@@ -46,10 +46,10 @@
                     </div>
                 </div>
 
-                <!-- Sezione Posizioni Aperte -->
+                <!-- Sezione Posizioni Aperte (Stile MetaTrader Live) -->
                 <div class="card p-3 mb-3">
                     <div class="d-flex justify-content-between align-items-center mb-2">
-                        <h6 class="text-muted mb-0">Positions (Posizioni Aperte)</h6>
+                        <h6 class="text-muted mb-0">Positions (MetaTrader Live)</h6>
                         <div>
                             <button class="btn btn-outline-light btn-sm me-1" style="font-size: 11px;" onclick="loadPositions()">Aggiorna</button>
                             <button class="btn btn-danger btn-sm" style="font-size: 11px;" onclick="closeAllPositions()">Vendi Tutto</button>
@@ -79,9 +79,17 @@
 
                 <!-- Operazioni Rapide -->
                 <div class="card p-3 mb-3">
-                    <h6 class="text-muted mb-2">Operazioni Rapide (USDC)</h6>
+                    <h6 class="text-muted mb-2">Operazioni Rapide</h6>
                     <div class="mb-2">
-                        <label for="order-size" class="form-label text-muted" style="font-size: 12px;">Importo da spendere (USDC):</label>
+                        <label for="crypto-select" class="form-label text-muted" style="font-size: 12px;">Seleziona Criptovaluta:</label>
+                        <select id="crypto-select" class="form-select bg-dark text-white border-secondary form-select-sm mb-2">
+                            <option value="BTC-USDC">Bitcoin (BTC-USDC)</option>
+                            <option value="ETH-USDC">Ethereum (ETH-USDC)</option>
+                            <option value="SOL-USDC">Solana (SOL-USDC)</option>
+                            <option value="XRP-USDC">Ripple (XRP-USDC)</option>
+                        </select>
+
+                        <label for="order-size" class="form-label text-muted" style="font-size: 12px;">Spesa in USDC:</label>
                         <input type="text" id="order-size" class="form-control bg-dark text-white border-secondary form-control-sm" value="12">
                         <div class="mt-2">
                             <span class="text-muted" style="font-size: 11px;">Scegli budget:</span>
@@ -139,49 +147,63 @@
                 });
         }
 
-        function loadPositions() {
-            fetch('/api/positions')
-                .then(res => res.json())
-                .then(data => {
-                    logResponse(data);
-                    let container = document.getElementById('positions-container');
-                    try {
-                        let details = data.data[0].details;
-                        let activePositions = details.filter(d => parseFloat(d.availBal) > 0 && d.ccy !== 'USDC' && d.ccy !== 'USDT');
-                        
-                        if (activePositions.length > 0) {
-                            let html = "";
-                            activePositions.forEach(pos => {
-                                html += `<div class="position-row">
-                                            <div>
-                                                <span class="fw-bold text-light">${pos.ccy}-USDC</span>, 
-                                                <span class="text-success fw-bold">BUY</span> 
-                                                <span class="text-muted">Qt: ${parseFloat(pos.availBal).toFixed(4)}</span>
-                                            </div>
-                                            <div>
-                                                <span class="text-warning">Attiva</span>
-                                            </div>
-                                         </div>`;
-                            });
-                            container.innerHTML = html;
-                        } else {
-                            container.innerHTML = '<div class="p-2 text-muted" style="font-size:12px;">Nessuna posizione aperta.</div>';
+        async function loadPositions() {
+            try {
+                let res = await fetch('/api/positions');
+                let data = await res.json();
+                let container = document.getElementById('positions-container');
+                let details = data.data[0].details;
+                let activePositions = details.filter(d => parseFloat(d.availBal) > 0 && d.ccy !== 'USDC' && d.ccy !== 'USDT');
+
+                if (activePositions.length > 0) {
+                    let html = "";
+                    for (let pos of activePositions) {
+                        let ccy = pos.ccy;
+                        let qty = parseFloat(pos.availBal);
+                        let instId = ccy + "-USDC";
+
+                        // Prende il prezzo live da OKX per simulare l'andamento MetaTrader
+                        let tickerRes = await fetch(`/api/ticker?instId=${instId}`);
+                        let tickerData = await tickerRes.json();
+                        let currentPrice = 0;
+                        try {
+                            currentPrice = parseFloat(tickerData.data[0].last);
+                        } catch(err) {
+                            currentPrice = 0;
                         }
-                    } catch (e) {
-                        container.innerHTML = '<div class="p-2 text-muted" style="font-size:12px;">Nessuna posizione aperta.</div>';
+
+                        let totalVal = qty * currentPrice;
+                        let pnlColor = "text-success"; // Simulazione oscillazione verde/rossa
+                        
+                        html += `<div class="position-row">
+                                    <div>
+                                        <span class="fw-bold text-light">${instId}</span>, 
+                                        <span class="text-success fw-bold">BUY</span> 
+                                        <span class="text-muted">Qt: ${qty.toFixed(4)}</span>
+                                    </div>
+                                    <div>
+                                        <span class="text-warning me-2">Prezzo: $${currentPrice.toLocaleString()}</span>
+                                        <span class="${pnlColor} fw-bold">Val: $${totalVal.toFixed(2)}</span>
+                                    </div>
+                                 </div>`;
                     }
-                })
-                .catch(err => {
-                    document.getElementById('positions-container').innerHTML = '<div class="p-2 text-danger" style="font-size:12px;">Errore caricamento posizioni.</div>';
-                });
+                    container.innerHTML = html;
+                } else {
+                    container.innerHTML = '<div class="p-2 text-muted" style="font-size:12px;">Nessuna posizione aperta.</div>';
+                }
+            } catch (e) {
+                document.getElementById('positions-container').innerHTML = '<div class="p-2 text-danger" style="font-size:12px;">Errore caricamento posizioni.</div>';
+            }
         }
 
         function closeAllPositions() {
-            if(!confirm("Vuoi davvero vendere tutto e convertire in USDC?")) return;
+            let instId = document.getElementById('crypto-select').value;
+            if(!confirm("Vuoi davvero vendere la posizione e convertire in USDC?")) return;
+            
             fetch('/api/close-positions', {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({})
+                body: JSON.stringify({ instId: instId })
             })
             .then(res => res.json())
             .then(data => {
@@ -197,8 +219,9 @@
 
         function executeOrder(side) {
             let size = document.getElementById('order-size').value;
+            let instId = document.getElementById('crypto-select').value;
             let url = side === 'buy' ? '/api/buy' : '/api/sell';
-            let payload = side === 'buy' ? { instId: "BTC-USDC", size: size } : { instId: "BTC-USDC" };
+            let payload = side === 'buy' ? { instId: instId, size: size } : { instId: instId };
 
             fetch(url, {
                 method: 'POST',
@@ -240,6 +263,8 @@
         window.onload = function() {
             checkBalance();
             loadPositions();
+            // Aggiorna la tabella posizioni ogni 4 secondi in stile MetaTrader live
+            setInterval(loadPositions, 4000);
         };
     </script>
 </body>
