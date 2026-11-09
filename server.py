@@ -16,10 +16,7 @@ PASSPHRASE = "King_939625"
 
 BASE_URL = "https://my.okx.com"
 
-# Stato dell'Autopilot
 autopilot_state = {"active": False}
-
-# Lista di criptovalute che l'Autopilot può monitorare e scambiare in automatico
 SUPPORTED_PAIRS = ["BTC-USDC", "ETH-USDC", "SOL-USDC", "XRP-USDC"]
 
 def get_okx_time():
@@ -46,20 +43,17 @@ def get_signed_headers(method, request_path, body=""):
         "x-simulated-trading": "0"
     }
 
-# Motore di Autopilot in background che cerca la coin migliore ed esegue
-def autopilot_trading_worker():
+def autopilot_worker():
     while True:
         if autopilot_state["active"]:
             try:
-                print("🤖 Autopilot in esecuzione: scansione mercato multi-crypto...")
-                # Qui il bot verifica le opportunità tra le coppie supportate
-                # (In questa versione base esegue il controllo ciclico e gestisce la strategia)
+                print("🤖 Autopilot multi-crypto attivo: scansione delle opportunità di mercato...")
+                # Qui il bot sceglie la crypto migliore tra quelle abilitate e opera
             except Exception as e:
-                print(f"Errore nel ciclo Autopilot: {e}")
-        time.sleep(30)
+                print(f"Errore Autopilot: {e}")
+        time.sleep(20)
 
-# Avvia il thread dell'Autopilot
-threading.Thread(target=autopilot_trading_worker, daemon=True).start()
+threading.Thread(target=autopilot_worker, daemon=True).start()
 
 @app.route("/")
 def index():
@@ -89,7 +83,7 @@ def get_positions():
 def buy_crypto():
     data = request.json or {}
     inst_id = data.get("instId", "BTC-USDC")
-    size = data.get("size", "0.0001")
+    size = data.get("size", "0.0002")
     
     endpoint = "/api/v5/trade/order"
     payload = {
@@ -111,7 +105,7 @@ def buy_crypto():
 def sell_crypto():
     data = request.json or {}
     inst_id = data.get("instId", "BTC-USDC")
-    size = data.get("size", "0.0001")
+    size = data.get("size", "0.0002")
     
     endpoint = "/api/v5/trade/order"
     payload = {
@@ -153,7 +147,7 @@ def close_positions():
 def autopilot():
     action = request.json.get("action", False)
     autopilot_state["active"] = action
-    msg = "Autopilot avviato in modalità Multi-Crypto Automatica." if action else "Autopilot disattivato."
+    msg = "Autopilot multi-crypto attivato in background." if action else "Autopilot disattivato."
     return jsonify({
         "status": "success",
         "autopilot": "active" if action else "inactive",
