@@ -10,23 +10,23 @@
         .card { background-color: #181a20; border: 1px solid #2b313a; border-radius: 6px; }
         .btn-success { background-color: #0ecb81; border: none; }
         .btn-danger { background-color: #f6465d; border: none; }
-        pre { background: #0b0e11 !important; color: #0ecb81 !important; border: 1px solid #2b313a; }
+        pre { background: #0b0e11 !important; color: #0ecb81 !important; border: 1px solid #2b313a; font-size: 11px; }
     </style>
 </head>
 <body class="p-3">
     <div class="container-fluid" style="max-width: 1400px;">
         <div class="row">
-            <!-- Colonna Sinistra: Grafico e Log -->
+            <!-- Colonna Sinistra: Grafico, Posizioni e Log -->
             <div class="col-xl-8 mb-3">
                 <!-- Sezione Grafico Candele (TradingView Widget) -->
                 <div class="card p-3 mb-3">
-                    <div class="tradingview-widget-container" style="height: 450px; width: 100%;">
+                    <div class="tradingview-widget-container" style="height: 400px; width: 100%;">
                         <div id="tradingview_chart" style="height: 100%; width: 100%;"></div>
                         <script type="text/javascript" src="https://s3.tradingview.com/tv.js"></script>
                         <script type="text/javascript">
                             new TradingView.widget({
                                 "width": "100%",
-                                "height": "450",
+                                "height": "400",
                                 "symbol": "OKX:BTCUSDC",
                                 "interval": "15",
                                 "timezone": "Europe/Rome",
@@ -43,10 +43,19 @@
                     </div>
                 </div>
 
+                <!-- Sezione Posizioni Aperte -->
+                <div class="card p-3 mb-3">
+                    <div class="d-flex justify-content-between align-items-center mb-2">
+                        <h6 class="text-muted mb-0">Posizioni Aperte / Asset</h6>
+                        <button class="btn btn-outline-light btn-sm" style="font-size: 11px;" onclick="loadPositions()">Aggiorna Posizioni</button>
+                    </div>
+                    <pre id="positions-output" class="p-2 rounded mb-0" style="max-height: 120px; overflow-y: auto;">Nessuna posizione caricata.</pre>
+                </div>
+
                 <!-- Sezione Log e Risposte API OKX -->
                 <div class="card p-3">
                     <h6 class="text-muted mb-2">Log e Risposte API OKX</h6>
-                    <pre id="api-log" class="p-2 rounded mb-0" style="max-height: 180px; overflow-y: auto; font-size: 11px;">Pronto.</pre>
+                    <pre id="api-log" class="p-2 rounded mb-0" style="max-height: 150px; overflow-y: auto;">Pronto.</pre>
                 </div>
             </div>
 
@@ -111,6 +120,18 @@
                 });
         }
 
+        function loadPositions() {
+            fetch('/api/positions')
+                .then(res => res.json())
+                .then(data => {
+                    document.getElementById('positions-output').innerText = JSON.stringify(data, null, 2);
+                    logResponse(data);
+                })
+                .catch(err => {
+                    document.getElementById('positions-output').innerText = "Errore: " + err;
+                });
+        }
+
         function executeOrder(side) {
             let size = document.getElementById('order-size').value;
             let url = side === 'buy' ? '/api/buy' : '/api/sell';
@@ -124,6 +145,7 @@
             .then(data => {
                 logResponse(data);
                 checkBalance();
+                loadPositions();
             })
             .catch(err => {
                 document.getElementById('api-log').innerText = "Errore ordine: " + err;
@@ -148,6 +170,7 @@
 
         window.onload = function() {
             checkBalance();
+            loadPositions();
         };
     </script>
 </body>
