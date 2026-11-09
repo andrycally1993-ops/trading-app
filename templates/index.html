@@ -79,9 +79,9 @@
                 <div class="card p-3 mb-3">
                     <h6 class="text-muted mb-2">Operazioni Rapide</h6>
                     <div class="mb-2">
-                        <label for="order-size" class="form-label text-muted" style="font-size: 12px;">Quantità (sz BTC):</label>
+                        <label for="order-size" class="form-label text-muted" style="font-size: 12px;">Quantità:</label>
                         <input type="text" id="order-size" class="form-control bg-dark text-white border-secondary form-control-sm" value="0.0001">
-                        <div class="text-info mt-1" style="font-size: 11px;">💡 Consigliato: <b>0.0001</b> (compatibile col tuo saldo)</div>
+                        <div class="text-info mt-1" style="font-size: 11px;">💡 Pronto per operare in automatico o manuale</div>
                     </div>
                     <div class="d-grid gap-2">
                         <button class="btn btn-success fw-bold py-2" onclick="executeOrder('buy')">COMPRA (Buy)</button>
@@ -183,7 +183,7 @@
             fetch(url, {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({ size: size })
+                body: JSON.stringify({ instId: "BTC-USDC", size: size })
             })
             .then(res => res.json())
             .then(data => {
