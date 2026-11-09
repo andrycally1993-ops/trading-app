@@ -46,7 +46,7 @@ def autopilot_worker():
     while True:
         if autopilot_state["active"]:
             try:
-                print("🤖 Autopilot attivo: operatività in background...")
+                print("🤖 Autopilot attivo in background...")
             except Exception as e:
                 print(f"Errore Autopilot: {e}")
         time.sleep(15)
@@ -69,7 +69,7 @@ def check_balance():
 
 @app.route("/api/positions", methods=["GET"])
 def get_positions():
-    endpoint = "/api/v5/trade/orders-pending?instId=BTC-USDC"
+    endpoint = "/api/v5/trade/orders-pending?instType=SPOT"
     headers = get_signed_headers("GET", endpoint)
     try:
         res = requests.get(BASE_URL + endpoint, headers=headers, timeout=10).json()
