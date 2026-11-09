@@ -15,6 +15,9 @@ PASSPHRASE = "King_939625"
 
 BASE_URL = "https://my.okx.com"
 
+# Stato dell'Autopilot in memoria
+autopilot_state = {"active": False}
+
 def get_okx_time():
     return datetime.datetime.now(datetime.timezone.utc).strftime('%Y-%m-%dT%H:%M:%S.%f')[:-3] + 'Z'
 
@@ -54,7 +57,6 @@ def check_balance():
     except Exception as e:
         return jsonify({"code": "1", "msg": str(e)}), 500
 
-# NUOVA ROTTA DEDICATA ALLE POSIZIONI APERTE (Non tocca nulla del resto)
 @app.route("/api/positions", methods=["GET"])
 def get_positions():
     endpoint = "/api/v5/account/positions?instType=SPOT"
@@ -108,6 +110,7 @@ def sell_crypto():
 def autopilot():
     data = request.json or {}
     action = data.get("action", False)
+    autopilot_state["active"] = action
     return jsonify({
         "status": "success", 
         "autopilot": "active" if action else "inactive",
