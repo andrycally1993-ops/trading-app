@@ -77,6 +77,16 @@ def get_positions():
     except Exception as e:
         return jsonify({"code": "1", "msg": str(e)}), 500
 
+@app.route("/api/ticker", methods=["GET"])
+def get_ticker():
+    inst_id = request.args.get("instId", "BTC-USDC")
+    endpoint = f"/api/v5/market/ticker?instId={inst_id}"
+    try:
+        res = requests.get(BASE_URL + endpoint, timeout=5).json()
+        return jsonify(res)
+    except Exception as e:
+        return jsonify({"code": "1", "msg": str(e)}), 500
+
 @app.route("/api/buy", methods=["POST"])
 def buy_crypto():
     data = request.json or {}
@@ -104,9 +114,9 @@ def buy_crypto():
 def sell_crypto():
     data = request.json or {}
     inst_id = data.get("instId", "BTC-USDC")
+    base_ccy = inst_id.split("-")[0]
     
-    # Recupera il saldo effettivo di BTC per venderlo tutto correttamente
-    bal_endpoint = "/api/v5/account/balance?ccy=BTC"
+    bal_endpoint = f"/api/v5/account/balance?ccy={base_ccy}"
     headers_bal = get_signed_headers("GET", bal_endpoint)
     
     try:
@@ -114,12 +124,12 @@ def sell_crypto():
         details = bal_res.get("data", [{}])[0].get("details", [])
         avail_sz = "0"
         for d in details:
-            if d.get("ccy") == "BTC":
+            if d.get("ccy") == base_ccy:
                 avail_sz = d.get("availBal", "0")
                 break
         
         if float(avail_sz) <= 0:
-            return jsonify({"code": "1", "msg": "Nessun saldo BTC disponibile da vendere."})
+            return jsonify({"code": "1", "msg": f"Nessun saldo {base_ccy} disponibile da vendere."})
 
         endpoint = "/api/v5/trade/order"
         payload = {
@@ -138,6 +148,9 @@ def sell_crypto():
 
 @app.route("/api/close-positions", methods=["POST"])
 def close_positions():
+    data = request.json or {}
+    inst_id = data.get("instId", "BTC-USDC")
+    # Imposta temporaneamente l'instId corretto per la vendita totale
     return sell_crypto()
 
 @app.route("/api/autopilot", methods=["POST"])
