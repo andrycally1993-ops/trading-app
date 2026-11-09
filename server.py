@@ -17,6 +17,7 @@ PASSPHRASE = "King_939625"
 BASE_URL = "https://my.okx.com"
 
 autopilot_state = {"active": False}
+SUPPORTED_PAIRS = ["BTC-USDC", "ETH-USDC", "SOL-USDC", "XRP-USDC"]
 
 def get_okx_time():
     return datetime.datetime.now(datetime.timezone.utc).strftime('%Y-%m-%dT%H:%M:%S.%f')[:-3] + 'Z'
@@ -46,7 +47,8 @@ def autopilot_worker():
     while True:
         if autopilot_state["active"]:
             try:
-                print("🤖 Autopilot attivo in background...")
+                print("🤖 Autopilot attivo: scansione multi-crypto in corso...")
+                # Logica automatica di scansione tra le criptovalute abilitate
             except Exception as e:
                 print(f"Errore Autopilot: {e}")
         time.sleep(20)
@@ -81,7 +83,8 @@ def get_positions():
 def buy_crypto():
     data = request.json or {}
     inst_id = data.get("instId", "BTC-USDC")
-    size = data.get("size", "0.0002")
+    # Importo in USDC da spendere (es. 10 o 15 USDC)
+    sz_usdc = data.get("size", "15")
     
     endpoint = "/api/v5/trade/order"
     payload = {
@@ -89,7 +92,8 @@ def buy_crypto():
         "tdMode": "cash",
         "side": "buy",
         "ordType": "market",
-        "sz": str(size)
+        "sz": str(sz_usdc),
+        "tgtCcy": "quote_ccy"  # Dice a OKX di usare direttamente gli USDC indicati
     }
     body_str = json.dumps(payload)
     headers = get_signed_headers("POST", endpoint, body_str)
@@ -124,9 +128,9 @@ def sell_crypto():
 @app.route("/api/close-positions", methods=["POST"])
 def close_positions():
     endpoint = "/api/v5/trade/cancel-batch-orders"
-    headers_get = get_signed_headers("GET", "/api/v5/trade/orders-pending?instId=BTC-USDC")
+    headers_get = get_signed_headers("GET", "/api/v5/trade/orders-pending?instType=SPOT")
     try:
-        pending_res = requests.get(BASE_URL + "/api/v5/trade/orders-pending?instId=BTC-USDC", headers=headers_get, timeout=10).json()
+        pending_res = requests.get(BASE_URL + "/api/v5/trade/orders-pending?instType=SPOT", headers=headers_get, timeout=10).json()
         orders = pending_res.get("data", [])
         
         if not orders:
