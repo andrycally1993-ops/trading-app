@@ -11,7 +11,9 @@
         .btn-success { background-color: #0ecb81; border: none; }
         .btn-danger { background-color: #f6465d; border: none; }
         pre { background: #0b0e11 !important; color: #0ecb81 !important; border: 1px solid #2b313a; font-size: 11px; }
-        .position-row { display: flex; justify-content: space-between; align-items: center; padding: 6px 8px; border-bottom: 1px solid #2b313a; font-size: 12px; }
+        .position-row { display: flex; justify-content: space-between; align-items: center; padding: 8px 10px; border-bottom: 1px solid #2b313a; font-size: 12px; }
+        .budget-btn { background-color: #2b313a; color: #eaecef; border: 1px solid #474d57; font-size: 11px; margin-right: 4px; }
+        .budget-btn:hover { background-color: #0ecb81; color: #000; border-color: #0ecb81; }
     </style>
 </head>
 <body class="p-3">
@@ -44,10 +46,10 @@
                     </div>
                 </div>
 
-                <!-- Sezione Posizioni Aperte e Chiudi Tutto -->
+                <!-- Sezione Posizioni Aperte (Stile Lista Pulita) -->
                 <div class="card p-3 mb-3">
                     <div class="d-flex justify-content-between align-items-center mb-2">
-                        <h6 class="text-muted mb-0">Posizioni Aperte</h6>
+                        <h6 class="text-muted mb-0">Positions (Posizioni Aperte)</h6>
                         <div>
                             <button class="btn btn-outline-light btn-sm me-1" style="font-size: 11px;" onclick="loadPositions()">Aggiorna</button>
                             <button class="btn btn-danger btn-sm" style="font-size: 11px;" onclick="closeAllPositions()">Chiudi Tutto</button>
@@ -75,15 +77,21 @@
                     <button class="btn btn-outline-light w-100 btn-sm" onclick="toggleAutopilot()">Attiva / Disattiva</button>
                 </div>
 
-                <!-- Operazioni Rapide -->
+                <!-- Operazioni Rapide (Scelta Intelligente in USDC) -->
                 <div class="card p-3 mb-3">
-                    <h6 class="text-muted mb-2">Operazioni Rapide</h6>
+                    <h6 class="text-muted mb-2">Operazioni Rapide (USDC)</h6>
                     <div class="mb-2">
-                        <label for="order-size" class="form-label text-muted" style="font-size: 12px;">Quantità (sz BTC):</label>
-                        <input type="text" id="order-size" class="form-control bg-dark text-white border-secondary form-control-sm" value="0.0002">
-                        <div class="text-info mt-1" style="font-size: 11px;">💡 Consigliato: <b>0.0002</b> (supera la soglia minima di OKX)</div>
+                        <label for="order-size" class="form-label text-muted" style="font-size: 12px;">Quanto vuoi spendere? (USDC):</label>
+                        <input type="text" id="order-size" class="form-control bg-dark text-white border-secondary form-control-sm" value="12">
+                        <!-- Pulsanti rapidi intelligenti basati sul tuo saldo -->
+                        <div class="mt-2">
+                            <span class="text-muted" style="font-size: 11px;">Scegli budget:</span>
+                            <button class="btn btn-sm budget-btn" onclick="setBudget(10)">10 USDC</button>
+                            <button class="btn btn-sm budget-btn" onclick="setBudget(12)">12 USDC</button>
+                            <button class="btn btn-sm budget-btn" onclick="setBudget(15)">15 USDC</button>
+                        </div>
                     </div>
-                    <div class="d-grid gap-2">
+                    <div class="d-grid gap-2 mt-2">
                         <button class="btn btn-success fw-bold py-2" onclick="executeOrder('buy')">COMPRA (Buy)</button>
                         <button class="btn btn-danger fw-bold py-2" onclick="executeOrder('sell')">VENDI (Sell)</button>
                     </div>
@@ -101,6 +109,10 @@
 
     <script>
         let autopilotActive = false;
+
+        function setBudget(val) {
+            document.getElementById('order-size').value = val;
+        }
 
         function logResponse(data) {
             document.getElementById('api-log').innerText = JSON.stringify(data, null, 2);
@@ -142,7 +154,7 @@
                                         <div>
                                             <span class="fw-bold text-light">${order.instId}</span>, 
                                             <span class="${sideColor} fw-bold">${order.side.toUpperCase()}</span> 
-                                            <span class="text-muted">Sz: ${order.sz}</span>
+                                            <span class="text-muted">Spend: ${order.sz} USDC</span>
                                         </div>
                                         <div>
                                             <span class="text-warning">Prezzo: ${order.px || 'Market'}</span>
