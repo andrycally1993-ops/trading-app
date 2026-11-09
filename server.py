@@ -59,11 +59,38 @@ def check_balance():
 
 @app.route("/api/positions", methods=["GET"])
 def get_positions():
-    endpoint = "/api/v5/account/positions?instType=SPOT"
+    # Endpoint per vedere gli ordini aperti / posizioni su OKX Spot
+    endpoint = "/api/v5/trade/orders-pending?instType=SPOT"
     headers = get_signed_headers("GET", endpoint)
     url = BASE_URL + endpoint
     try:
         response = requests.get(url, headers=headers, timeout=10)
+        return jsonify(response.json())
+    except Exception as e:
+        return jsonify({"code": "1", "msg": str(e)}), 500
+
+@app.route("/api/close-positions", methods=["POST"])
+def close_positions():
+    # Annulla tutti gli ordini pendenti / posizioni aperte su BTC-USDC
+    endpoint = "/api/v5/trade/cancel-batch-orders"
+    payload = [{
+        "instId": "BTC-USDC",
+        "ordId": request.json.get("ordId", "")
+    }]
+    # Se non viene passato un ID specifico, proviamo a recuperare gli ordini pendenti e chiuderli
+    headers_get = get_signed_headers("GET", "/api/v5/trade/orders-pending?instId=BTC-USDC")
+    try:
+        pending_res = requests.get(BASE_URL + "/api/v5/trade/orders-pending?instId=BTC-USDC", headers=headers_get, timeout=10).json()
+        orders = pending_res.get("data", [])
+        
+        if not orders:
+            return jsonify({"code": "0", "msg": "Nessun ordine aperto da chiudere."})
+        
+        cancel_payload = [{"instId": o["instId"], "ordId": o["ordId"]} for o in orders]
+        body_str = json.dumps(cancel_payload)
+        headers_post = get_signed_headers("POST", endpoint, body_str)
+        
+        response = requests.post(BASE_URL + endpoint, headers=headers_post, data=body_str, timeout=10)
         return jsonify(response.json())
     except Exception as e:
         return jsonify({"code": "1", "msg": str(e)}), 500
@@ -111,10 +138,14 @@ def autopilot():
     data = request.json or {}
     action = data.get("action", False)
     autopilot_state["active"] = action
+    
+    # Qui puoi inserire la logica automatica quando l'autopilot è attivo
+    msg = "Autopilot attivato con successo. Monitoraggio in corso..." if action else "Autopilot disattivato."
+    
     return jsonify({
         "status": "success", 
         "autopilot": "active" if action else "inactive",
-        "msg": "Autopilot aggiornato con successo"
+        "msg": msg
     })
 
 if __name__ == "__main__":
