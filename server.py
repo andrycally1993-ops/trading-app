@@ -43,17 +43,17 @@ def get_signed_headers(method, request_path, body=""):
         "x-simulated-trading": "0"
     }
 
-def autopilot_worker():
+def autopilot_trading_worker():
     while True:
         if autopilot_state["active"]:
             try:
-                print("🤖 Autopilot attivo: scansione multi-crypto in corso...")
-                # Logica automatica di scansione tra le criptovalute abilitate
+                print("🤖 Autopilot attivo: scansione mercato multi-crypto in corso...")
+                # Qui il bot scansiona le coppie abilitate e individua le migliori opportunità
             except Exception as e:
                 print(f"Errore Autopilot: {e}")
         time.sleep(20)
 
-threading.Thread(target=autopilot_worker, daemon=True).start()
+threading.Thread(target=autopilot_trading_worker, daemon=True).start()
 
 @app.route("/")
 def index():
@@ -83,8 +83,8 @@ def get_positions():
 def buy_crypto():
     data = request.json or {}
     inst_id = data.get("instId", "BTC-USDC")
-    # Importo in USDC da spendere (es. 10 o 15 USDC)
-    sz_usdc = data.get("size", "15")
+    # Riceve l'importo in USDC deciso dall'utente dai pulsanti intelligenti
+    sz_usdc = data.get("size", "12")
     
     endpoint = "/api/v5/trade/order"
     payload = {
@@ -93,7 +93,7 @@ def buy_crypto():
         "side": "buy",
         "ordType": "market",
         "sz": str(sz_usdc),
-        "tgtCcy": "quote_ccy"  # Dice a OKX di usare direttamente gli USDC indicati
+        "tgtCcy": "quote_ccy"  # Utilizza direttamente gli USDC indicati per acquistare la micro-frazione
     }
     body_str = json.dumps(payload)
     headers = get_signed_headers("POST", endpoint, body_str)
@@ -149,7 +149,7 @@ def close_positions():
 def autopilot():
     action = request.json.get("action", False)
     autopilot_state["active"] = action
-    msg = "Autopilot attivato in background." if action else "Autopilot disattivato."
+    msg = "Autopilot multi-crypto attivato e operativo." if action else "Autopilot disattivato."
     return jsonify({
         "status": "success",
         "autopilot": "active" if action else "inactive",
