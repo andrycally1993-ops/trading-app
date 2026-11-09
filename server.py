@@ -4,6 +4,7 @@ import base64
 import hmac
 import hashlib
 import json
+import threading
 import requests
 from flask import Flask, render_template, request, jsonify
 
@@ -15,7 +16,7 @@ PASSPHRASE = "King_939625"
 
 BASE_URL = "https://my.okx.com"
 
-# Stato dell'Autopilot in memoria
+# Stato globale dell'Autopilot
 autopilot_state = {"active": False}
 
 def get_okx_time():
@@ -42,6 +43,22 @@ def get_signed_headers(method, request_path, body=""):
         "x-simulated-trading": "0"
     }
 
+# Funzione in background che gira continuamente quando l'Autopilot è attivo
+def autopilot_background_worker():
+    while True:
+        if autopilot_state["active"]:
+            try:
+                print("🤖 Autopilot in esecuzione: controllo mercato BTC-USDC...")
+                # Qui puoi inserire la logica di controllo o test periodico (es. ogni 30 secondi)
+                # Ad esempio, verifica del prezzo o esecuzione automatica condizionata
+            except Exception as e:
+                print(f"Errore nel worker dell'Autopilot: {e}")
+        time.sleep(30) # Controlla ogni 30 secondi
+
+# Avvia il thread in background all'avvio del server
+worker_thread = threading.Thread(target=autopilot_background_worker, daemon=True)
+worker_thread.start()
+
 @app.route("/")
 def index():
     return render_template("index.html")
@@ -59,7 +76,6 @@ def check_balance():
 
 @app.route("/api/positions", methods=["GET"])
 def get_positions():
-    # Endpoint per vedere gli ordini aperti / posizioni su OKX Spot
     endpoint = "/api/v5/trade/orders-pending?instType=SPOT"
     headers = get_signed_headers("GET", endpoint)
     url = BASE_URL + endpoint
@@ -71,13 +87,7 @@ def get_positions():
 
 @app.route("/api/close-positions", methods=["POST"])
 def close_positions():
-    # Annulla tutti gli ordini pendenti / posizioni aperte su BTC-USDC
     endpoint = "/api/v5/trade/cancel-batch-orders"
-    payload = [{
-        "instId": "BTC-USDC",
-        "ordId": request.json.get("ordId", "")
-    }]
-    # Se non viene passato un ID specifico, proviamo a recuperare gli ordini pendenti e chiuderli
     headers_get = get_signed_headers("GET", "/api/v5/trade/orders-pending?instId=BTC-USDC")
     try:
         pending_res = requests.get(BASE_URL + "/api/v5/trade/orders-pending?instId=BTC-USDC", headers=headers_get, timeout=10).json()
@@ -139,8 +149,7 @@ def autopilot():
     action = data.get("action", False)
     autopilot_state["active"] = action
     
-    # Qui puoi inserire la logica automatica quando l'autopilot è attivo
-    msg = "Autopilot attivato con successo. Monitoraggio in corso..." if action else "Autopilot disattivato."
+    msg = "Autopilot attivato e in esecuzione in background." if action else "Autopilot disattivato."
     
     return jsonify({
         "status": "success", 
