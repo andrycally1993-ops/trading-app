@@ -17,7 +17,6 @@ PASSPHRASE = "King_939625"
 BASE_URL = "https://my.okx.com"
 
 autopilot_state = {"active": False}
-SUPPORTED_PAIRS = ["BTC-USDC", "ETH-USDC", "SOL-USDC", "XRP-USDC"]
 
 def get_okx_time():
     return datetime.datetime.now(datetime.timezone.utc).strftime('%Y-%m-%dT%H:%M:%S.%f')[:-3] + 'Z'
@@ -47,7 +46,7 @@ def autopilot_worker():
     while True:
         if autopilot_state["active"]:
             try:
-                print("🤖 Autopilot multi-crypto attivo in background...")
+                print("🤖 Autopilot attivo in background...")
             except Exception as e:
                 print(f"Errore Autopilot: {e}")
         time.sleep(20)
@@ -82,8 +81,10 @@ def get_positions():
 def buy_crypto():
     data = request.json or {}
     inst_id = data.get("instId", "BTC-USDC")
-    # Qui usiamo direttamente gli USDC da spendere (es. 15 USDC) per evitare errori di lotti BTC
-    sz_usdc = data.get("size", "15") 
+    
+    # Usiamo direttamente una quota in USDC (es. 15 USDC) che supera i 10 USDC minimi di OKX
+    # ma rientra perfettamente nei tuoi 23.84 USDC disponibili.
+    sz_usdc = data.get("size", "15")
     
     endpoint = "/api/v5/trade/order"
     payload = {
@@ -92,7 +93,7 @@ def buy_crypto():
         "side": "buy",
         "ordType": "market",
         "sz": str(sz_usdc),
-        "tgtCcy": "quote_ccy"  # Dice a OKX di spendere direttamente gli USDC specificati in sz
+        "tgtCcy": "quote_ccy"  # Dice a OKX di spendere direttamente gli USDC indicati in sz
     }
     body_str = json.dumps(payload)
     headers = get_signed_headers("POST", endpoint, body_str)
@@ -148,7 +149,7 @@ def close_positions():
 def autopilot():
     action = request.json.get("action", False)
     autopilot_state["active"] = action
-    msg = "Autopilot multi-crypto attivato in background." if action else "Autopilot disattivato."
+    msg = "Autopilot attivato in background." if action else "Autopilot disattivato."
     return jsonify({
         "status": "success",
         "autopilot": "active" if action else "inactive",
