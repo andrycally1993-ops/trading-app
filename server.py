@@ -81,10 +81,7 @@ def get_positions():
 def buy_crypto():
     data = request.json or {}
     inst_id = data.get("instId", "BTC-USDC")
-    
-    # Usiamo direttamente una quota in USDC (es. 15 USDC) che supera i 10 USDC minimi di OKX
-    # ma rientra perfettamente nei tuoi 23.84 USDC disponibili.
-    sz_usdc = data.get("size", "15")
+    size = data.get("size", "0.0002")
     
     endpoint = "/api/v5/trade/order"
     payload = {
@@ -92,8 +89,7 @@ def buy_crypto():
         "tdMode": "cash",
         "side": "buy",
         "ordType": "market",
-        "sz": str(sz_usdc),
-        "tgtCcy": "quote_ccy"  # Dice a OKX di spendere direttamente gli USDC indicati in sz
+        "sz": str(size)
     }
     body_str = json.dumps(payload)
     headers = get_signed_headers("POST", endpoint, body_str)
