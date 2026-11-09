@@ -17,7 +17,6 @@ PASSPHRASE = "King_939625"
 BASE_URL = "https://my.okx.com"
 
 autopilot_state = {"active": False}
-SUPPORTED_PAIRS = ["BTC-USDC", "ETH-USDC", "SOL-USDC", "XRP-USDC"]
 
 def get_okx_time():
     return datetime.datetime.now(datetime.timezone.utc).strftime('%Y-%m-%dT%H:%M:%S.%f')[:-3] + 'Z'
@@ -43,17 +42,16 @@ def get_signed_headers(method, request_path, body=""):
         "x-simulated-trading": "0"
     }
 
-def autopilot_trading_worker():
+def autopilot_worker():
     while True:
         if autopilot_state["active"]:
             try:
-                print("🤖 Autopilot attivo: scansione mercato multi-crypto in corso...")
-                # Qui il bot scansiona le coppie abilitate e individua le migliori opportunità
+                print("🤖 Autopilot attivo in background...")
             except Exception as e:
                 print(f"Errore Autopilot: {e}")
         time.sleep(20)
 
-threading.Thread(target=autopilot_trading_worker, daemon=True).start()
+threading.Thread(target=autopilot_worker, daemon=True).start()
 
 @app.route("/")
 def index():
@@ -61,7 +59,7 @@ def index():
 
 @app.route("/api/balance", methods=["GET"])
 def check_balance():
-    endpoint = "/api/v5/account/balance?ccy=USDC"
+    endpoint = "/api/v5/account/balance"
     headers = get_signed_headers("GET", endpoint)
     try:
         res = requests.get(BASE_URL + endpoint, headers=headers, timeout=10).json()
@@ -71,7 +69,7 @@ def check_balance():
 
 @app.route("/api/positions", methods=["GET"])
 def get_positions():
-    endpoint = "/api/v5/trade/orders-pending?instType=SPOT"
+    endpoint = "/api/v5/account/balance"
     headers = get_signed_headers("GET", endpoint)
     try:
         res = requests.get(BASE_URL + endpoint, headers=headers, timeout=10).json()
@@ -83,7 +81,6 @@ def get_positions():
 def buy_crypto():
     data = request.json or {}
     inst_id = data.get("instId", "BTC-USDC")
-    # Riceve l'importo in USDC deciso dall'utente dai pulsanti intelligenti
     sz_usdc = data.get("size", "12")
     
     endpoint = "/api/v5/trade/order"
@@ -93,7 +90,7 @@ def buy_crypto():
         "side": "buy",
         "ordType": "market",
         "sz": str(sz_usdc),
-        "tgtCcy": "quote_ccy"  # Utilizza direttamente gli USDC indicati per acquistare la micro-frazione
+        "tgtCcy": "quote_ccy"
     }
     body_str = json.dumps(payload)
     headers = get_signed_headers("POST", endpoint, body_str)
@@ -107,49 +104,47 @@ def buy_crypto():
 def sell_crypto():
     data = request.json or {}
     inst_id = data.get("instId", "BTC-USDC")
-    size = data.get("size", "0.0002")
     
-    endpoint = "/api/v5/trade/order"
-    payload = {
-        "instId": inst_id,
-        "tdMode": "cash",
-        "side": "sell",
-        "ordType": "market",
-        "sz": str(size)
-    }
-    body_str = json.dumps(payload)
-    headers = get_signed_headers("POST", endpoint, body_str)
+    # Recupera il saldo effettivo di BTC per venderlo tutto correttamente
+    bal_endpoint = "/api/v5/account/balance?ccy=BTC"
+    headers_bal = get_signed_headers("GET", bal_endpoint)
+    
     try:
-        res = requests.post(BASE_URL + endpoint, headers=headers, data=body_str, timeout=10).json()
+        bal_res = requests.get(BASE_URL + bal_endpoint, headers=headers_bal, timeout=10).json()
+        details = bal_res.get("data", [{}])[0].get("details", [])
+        avail_sz = "0"
+        for d in details:
+            if d.get("ccy") == "BTC":
+                avail_sz = d.get("availBal", "0")
+                break
+        
+        if float(avail_sz) <= 0:
+            return jsonify({"code": "1", "msg": "Nessun saldo BTC disponibile da vendere."})
+
+        endpoint = "/api/v5/trade/order"
+        payload = {
+            "instId": inst_id,
+            "tdMode": "cash",
+            "side": "sell",
+            "ordType": "market",
+            "sz": str(avail_sz)
+        }
+        body_str = json.dumps(payload)
+        headers_post = get_signed_headers("POST", endpoint, body_str)
+        res = requests.post(BASE_URL + endpoint, headers=headers_post, data=body_str, timeout=10).json()
         return jsonify(res)
     except Exception as e:
         return jsonify({"code": "1", "msg": str(e)}), 500
 
 @app.route("/api/close-positions", methods=["POST"])
 def close_positions():
-    endpoint = "/api/v5/trade/cancel-batch-orders"
-    headers_get = get_signed_headers("GET", "/api/v5/trade/orders-pending?instType=SPOT")
-    try:
-        pending_res = requests.get(BASE_URL + "/api/v5/trade/orders-pending?instType=SPOT", headers=headers_get, timeout=10).json()
-        orders = pending_res.get("data", [])
-        
-        if not orders:
-            return jsonify({"code": "0", "msg": "Nessuna posizione aperta da chiudere."})
-        
-        cancel_payload = [{"instId": o["instId"], "ordId": o["ordId"]} for o in orders]
-        body_str = json.dumps(cancel_payload)
-        headers_post = get_signed_headers("POST", endpoint, body_str)
-        
-        response = requests.post(BASE_URL + endpoint, headers=headers_post, data=body_str, timeout=10).json()
-        return jsonify(response.json())
-    except Exception as e:
-        return jsonify({"code": "1", "msg": str(e)}), 500
+    return sell_crypto()
 
 @app.route("/api/autopilot", methods=["POST"])
 def autopilot():
     action = request.json.get("action", False)
     autopilot_state["active"] = action
-    msg = "Autopilot multi-crypto attivato e operativo." if action else "Autopilot disattivato."
+    msg = "Autopilot attivato e operativo." if action else "Autopilot disattivato."
     return jsonify({
         "status": "success",
         "autopilot": "active" if action else "inactive",
