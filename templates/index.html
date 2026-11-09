@@ -11,15 +11,15 @@
         .btn-success { background-color: #0ecb81; border: none; }
         .btn-danger { background-color: #f6465d; border: none; }
         pre { background: #0b0e11 !important; color: #0ecb81 !important; border: 1px solid #2b313a; font-size: 11px; }
-        .asset-row { display: flex; justify-content: space-between; padding: 6px 0; border-bottom: 1px solid #2b313a; }
+        .position-row { display: flex; justify-content: space-between; align-items: center; padding: 6px 8px; border-bottom: 1px solid #2b313a; font-size: 12px; }
     </style>
 </head>
 <body class="p-3">
     <div class="container-fluid" style="max-width: 1400px;">
         <div class="row">
-            <!-- Colonna Sinistra: Grafico, Posizioni e Log -->
+            <!-- Colonna Sinistra: Grafico, Posizioni stile MetaTrader e Log -->
             <div class="col-xl-8 mb-3">
-                <!-- Sezione Grafico Candele (TradingView Widget) -->
+                <!-- Sezione Grafico Candele -->
                 <div class="card p-3 mb-3">
                     <div class="tradingview-widget-container" style="height: 400px; width: 100%;">
                         <div id="tradingview_chart" style="height: 100%; width: 100%;"></div>
@@ -44,17 +44,17 @@
                     </div>
                 </div>
 
-                <!-- Sezione Posizioni Aperte e Chiudi Tutto -->
+                <!-- Sezione Posizioni Aperte (Stile Lista / App di Trading) -->
                 <div class="card p-3 mb-3">
                     <div class="d-flex justify-content-between align-items-center mb-2">
-                        <h6 class="text-muted mb-0">Posizioni & Asset Attivi</h6>
+                        <h6 class="text-muted mb-0">Positions (Posizioni Aperte)</h6>
                         <div>
                             <button class="btn btn-outline-light btn-sm me-1" style="font-size: 11px;" onclick="loadPositions()">Aggiorna</button>
                             <button class="btn btn-danger btn-sm" style="font-size: 11px;" onclick="closeAllPositions()">Chiudi Tutto</button>
                         </div>
                     </div>
-                    <div id="positions-container" class="p-2 rounded" style="background:#0b0e11; border:1px solid #2b313a; min-height: 80px; max-height: 150px; overflow-y: auto;">
-                        <span class="text-muted" style="font-size:12px;">Caricamento posizioni...</span>
+                    <div id="positions-container" class="rounded" style="background:#0b0e11; border:1px solid #2b313a; min-height: 80px; max-height: 150px; overflow-y: auto;">
+                        <div class="p-2 text-muted" style="font-size:12px;">Nessuna posizione aperta.</div>
                     </div>
                 </div>
 
@@ -65,7 +65,7 @@
                 </div>
             </div>
 
-            <!-- Colonna Destra: Autopilot, Operazioni Rapide e Saldo -->
+            <!-- Colonna Destra: Autopilot, Operazioni Rapide e Saldo Reale USDC -->
             <div class="col-xl-4">
                 <!-- Sistema Autopilot -->
                 <div class="card p-3 mb-3">
@@ -75,14 +75,13 @@
                     <button class="btn btn-outline-light w-100 btn-sm" onclick="toggleAutopilot()">Attiva / Disattiva</button>
                 </div>
 
-                <!-- Operazioni Rapide con Suggeritore di Quantità -->
+                <!-- Operazioni Rapide -->
                 <div class="card p-3 mb-3">
                     <h6 class="text-muted mb-2">Operazioni Rapide</h6>
                     <div class="mb-2">
                         <label for="order-size" class="form-label text-muted" style="font-size: 12px;">Quantità (sz BTC):</label>
-                        <input type="text" id="order-size" class="form-control bg-dark text-white border-secondary form-control-sm" value="0.0002">
-                        <!-- Suggerimento intelligente basato sul saldo -->
-                        <div id="size-suggestion" class="text-info mt-1" style="font-size: 11px;">💡 Consigliato per il tuo saldo: <b>0.0002</b> (≈15 USDC)</div>
+                        <input type="text" id="order-size" class="form-control bg-dark text-white border-secondary form-control-sm" value="0.0001">
+                        <div class="text-info mt-1" style="font-size: 11px;">💡 Suggerito: <b>0.0001</b> (≈7.4 USDC)</div>
                     </div>
                     <div class="d-grid gap-2">
                         <button class="btn btn-success fw-bold py-2" onclick="executeOrder('buy')">COMPRA (Buy)</button>
@@ -90,7 +89,7 @@
                     </div>
                 </div>
 
-                <!-- Saldo Reale USDC -->
+                <!-- Saldo Reale USDC (Fisso nel suo posto originale) -->
                 <div class="card p-3">
                     <h6 class="text-muted mb-2">Saldo Reale USDC</h6>
                     <h4 id="balance-display" class="text-success mb-2">Caricamento...</h4>
@@ -117,11 +116,6 @@
                         if (ccyBal) {
                             let balVal = parseFloat(ccyBal.availBal);
                             document.getElementById('balance-display').innerText = balVal.toFixed(2) + " USDC";
-                            
-                            // Calcolo dinamico del consiglio sulla quantità in base al saldo reale
-                            let suggestedSize = balVal > 20 ? "0.0002" : "0.0001";
-                            document.getElementById('order-size').value = suggestedSize;
-                            document.getElementById('size-suggestioninnerHTML').innerHTML = `💡 Consigliato per il tuo saldo (${balVal.toFixed(1)} USDC): <b>${suggestedSize}</b> BTC`;
                         } else {
                             document.getElementById('balance-display').innerText = "0.00 USDC";
                         }
@@ -140,21 +134,28 @@
                 .then(data => {
                     logResponse(data);
                     let container = document.getElementById('positions-container');
-                    if (data.code === "0" && data.assets && data.assets.length > 0) {
+                    if (data.code === "0" && data.data && data.data.length > 0) {
                         let html = "";
-                        data.assets.forEach(asset => {
-                            html += `<div class="asset-row">
-                                        <span class="fw-bold text-warning">${asset.ccy}</span>
-                                        <span class="text-light">Disponibile: ${parseFloat(asset.balance).toFixed(6)}</span>
+                        data.data.forEach(order => {
+                            let sideColor = order.side === 'buy' ? 'text-success' : 'text-danger';
+                            html += `<div class="position-row">
+                                        <div>
+                                            <span class="fw-bold text-light">${order.instId}</span>, 
+                                            <span class="${sideColor} fw-bold">${order.side.toUpperCase()}</span> 
+                                            <span class="text-muted">${order.sz}</span>
+                                        </div>
+                                        <div>
+                                            <span class="text-warning">Prezzo: ${order.px || 'Market'}</span>
+                                        </div>
                                      </div>`;
                         });
                         container.innerHTML = html;
                     } else {
-                        container.innerHTML = '<span class="text-muted" style="font-size:12px;">Nessuna posizione/asset attivo al momento.</span>';
+                        container.innerHTML = '<div class="p-2 text-muted" style="font-size:12px;">Nessuna posizione aperta.</div>';
                     }
                 })
                 .catch(err => {
-                    document.getElementById('positions-container').innerHTML = '<span class="text-danger" style="font-size:12px;">Errore caricamento posizioni.</span>';
+                    document.getElementById('positions-container').innerHTML = '<div class="p-2 text-danger" style="font-size:12px;">Errore caricamento posizioni.</div>';
                 });
         }
 
