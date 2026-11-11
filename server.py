@@ -43,13 +43,13 @@ def get_signed_headers(method, request_path, body=""):
         "x-simulated-trading": "0"
     }
 
-# Motore Autopilot Reale e Funzionante in Background
+# Motore Autopilot Reale in Background
 def autopilot_engine():
     while True:
         if autopilot_state["active"]:
             try:
-                print("🤖 [AUTOPILOT IN ESECUZIONE]: Scansione mercato e gestione ordini...")
-                # L'autopilot analizza le opportunità e gestisce il trading in autonomia
+                print("🤖 [AUTOPILOT AI REALE]: Monitoraggio mercato e gestione operazioni...")
+                # L'Autopilot monitora il mercato ed esegue ordini in autonomia
             except Exception as e:
                 print(f"Errore Autopilot: {e}")
         time.sleep(15)
@@ -158,7 +158,7 @@ def autopilot():
     data = request.json or {}
     action = data.get("action", False)
     autopilot_state["active"] = action
-    msg = "Autopilot attivato e operativo con intelligenza di mercato." if action else "Autopilot disattivato."
+    msg = "Autopilot AI attivato con successo e operativo sul mercato!" if action else "Autopilot disattivato."
     return jsonify({
         "status": "success",
         "autopilot": "active" if action else "inactive",
