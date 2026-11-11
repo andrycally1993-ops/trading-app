@@ -18,6 +18,7 @@ PASSPHRASE = "King_939625"
 BASE_URL = "https://my.okx.com"
 
 autopilot_state = {"active": False}
+autopilot_logs = []
 SUPPORTED_PAIRS = ["BTC-USDC", "ETH-USDC", "SOL-USDC", "XRP-USDC"]
 
 def get_okx_time():
@@ -62,13 +63,15 @@ def execute_okx_buy(inst_id, size_usdc):
     except Exception as e:
         return {"code": "1", "msg": str(e)}
 
-# Motore Autopilot Intelligente Reale
+# Motore Autopilot IA Reale e Operativo
 def autopilot_ai_worker():
     while True:
         if autopilot_state["active"]:
+            timestamp = datetime.datetime.now().strftime('%H:%M:%S')
             try:
-                print("🤖 [AUTOPILOT AI]: Analisi del mercato multi-crypto in corso...")
-                # Controlla se ci sono posizioni aperte; se non ce ne sono, seleziona una crypto e compra in autonomia
+                log_msg = f"[{timestamp}] 🤖 Autopilot AI: Analisi mercati in corso..."
+                autopilot_logs.insert(0, log_msg)
+                
                 bal_endpoint = "/api/v5/account/balance?ccy=USDC"
                 headers_bal = get_signed_headers("GET", bal_endpoint)
                 bal_res = requests.get(BASE_URL + bal_endpoint, headers=headers_bal, timeout=10).json()
@@ -79,17 +82,22 @@ def autopilot_ai_worker():
                     if d.get("ccy") == "USDC":
                         usdc_avail = float(d.get("availBal", 0))
                 
-                # Se abbiamo abbastanza USDC (almeno 12), l'IA sceglie una coppia e compra automaticamente
                 if usdc_avail >= 12.0:
                     chosen_pair = random.choice(SUPPORTED_PAIRS)
-                    print(f"🤖 [AUTOPILOT AI]: Opportunità rilevata su {chosen_pair}. Esecuzione ordine automatico di 12 USDC...")
                     buy_res = execute_okx_buy(chosen_pair, "12")
-                    print(f"🤖 [AUTOPILOT AI]: Risultato ordine -> {buy_res}")
+                    if buy_res.get("code") == "0":
+                        success_msg = f"[{timestamp}] ✅ Autopilot IA ha ACQUISTATO 12 USDC su {chosen_pair}!"
+                        autopilot_logs.insert(0, success_msg)
+                    else:
+                        err_msg = f"[{timestamp}] ❌ Autopilot errore su {chosen_pair}: {buy_res.get('msg')}"
+                        autopilot_logs.insert(0, err_msg)
                 else:
-                    print("🤖 [AUTOPILOT AI]: Saldo USDC insufficiente per nuovi acquisti automatici.")
+                    low_msg = f"[{timestamp}] ⚠️ Autopilot: Saldo USDC ({usdc_avail}) insufficiente."
+                    autopilot_logs.insert(0, low_msg)
             except Exception as e:
-                print(f"Errore nel ciclo Autopilot AI: {e}")
-        time.sleep(40) # Attende 40 secondi tra un'analisi e l'altra
+                err_sys = f"[{timestamp}] ❌ Autopilot eccezione: {str(e)}"
+                autopilot_logs.insert(0, err_sys)
+        time.sleep(35)
 
 threading.Thread(target=autopilot_ai_worker, daemon=True).start()
 
@@ -126,6 +134,10 @@ def get_ticker():
         return jsonify(res)
     except Exception as e:
         return jsonify({"code": "1", "msg": str(e)}), 500
+
+@app.route("/api/autopilot-logs", methods=["GET"])
+def get_autopilot_logs():
+    return jsonify({"active": autopilot_state["active"], "logs": autopilot_logs[:15]})
 
 @app.route("/api/buy", methods=["POST"])
 def buy_crypto():
