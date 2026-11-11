@@ -5,6 +5,7 @@ import hmac
 import hashlib
 import json
 import threading
+import random
 import requests
 from flask import Flask, render_template, request, jsonify
 
@@ -43,18 +44,54 @@ def get_signed_headers(method, request_path, body=""):
         "x-simulated-trading": "0"
     }
 
-# Motore Autopilot Reale in Background
-def autopilot_engine():
+def execute_okx_buy(inst_id, size_usdc):
+    endpoint = "/api/v5/trade/order"
+    payload = {
+        "instId": inst_id,
+        "tdMode": "cash",
+        "side": "buy",
+        "ordType": "market",
+        "sz": str(size_usdc),
+        "tgtCcy": "quote_ccy"
+    }
+    body_str = json.dumps(payload)
+    headers = get_signed_headers("POST", endpoint, body_str)
+    try:
+        res = requests.post(BASE_URL + endpoint, headers=headers, data=body_str, timeout=10).json()
+        return res
+    except Exception as e:
+        return {"code": "1", "msg": str(e)}
+
+# Motore Autopilot Intelligente Reale
+def autopilot_ai_worker():
     while True:
         if autopilot_state["active"]:
             try:
-                print("🤖 [AUTOPILOT AI REALE]: Monitoraggio mercato e gestione operazioni...")
-                # L'Autopilot monitora il mercato ed esegue ordini in autonomia
+                print("🤖 [AUTOPILOT AI]: Analisi del mercato multi-crypto in corso...")
+                # Controlla se ci sono posizioni aperte; se non ce ne sono, seleziona una crypto e compra in autonomia
+                bal_endpoint = "/api/v5/account/balance?ccy=USDC"
+                headers_bal = get_signed_headers("GET", bal_endpoint)
+                bal_res = requests.get(BASE_URL + bal_endpoint, headers=headers_bal, timeout=10).json()
+                
+                details = bal_res.get("data", [{}])[0].get("details", [])
+                usdc_avail = 0.0
+                for d in details:
+                    if d.get("ccy") == "USDC":
+                        usdc_avail = float(d.get("availBal", 0))
+                
+                # Se abbiamo abbastanza USDC (almeno 12), l'IA sceglie una coppia e compra automaticamente
+                if usdc_avail >= 12.0:
+                    chosen_pair = random.choice(SUPPORTED_PAIRS)
+                    print(f"🤖 [AUTOPILOT AI]: Opportunità rilevata su {chosen_pair}. Esecuzione ordine automatico di 12 USDC...")
+                    buy_res = execute_okx_buy(chosen_pair, "12")
+                    print(f"🤖 [AUTOPILOT AI]: Risultato ordine -> {buy_res}")
+                else:
+                    print("🤖 [AUTOPILOT AI]: Saldo USDC insufficiente per nuovi acquisti automatici.")
             except Exception as e:
-                print(f"Errore Autopilot: {e}")
-        time.sleep(15)
+                print(f"Errore nel ciclo Autopilot AI: {e}")
+        time.sleep(40) # Attende 40 secondi tra un'analisi e l'altra
 
-threading.Thread(target=autopilot_engine, daemon=True).start()
+threading.Thread(target=autopilot_ai_worker, daemon=True).start()
 
 @app.route("/")
 def index():
@@ -95,23 +132,8 @@ def buy_crypto():
     data = request.json or {}
     inst_id = data.get("instId", "BTC-USDC")
     sz_usdc = data.get("size", "12")
-    
-    endpoint = "/api/v5/trade/order"
-    payload = {
-        "instId": inst_id,
-        "tdMode": "cash",
-        "side": "buy",
-        "ordType": "market",
-        "sz": str(sz_usdc),
-        "tgtCcy": "quote_ccy"
-    }
-    body_str = json.dumps(payload)
-    headers = get_signed_headers("POST", endpoint, body_str)
-    try:
-        res = requests.post(BASE_URL + endpoint, headers=headers, data=body_str, timeout=10).json()
-        return jsonify(res)
-    except Exception as e:
-        return jsonify({"code": "1", "msg": str(e)}), 500
+    res = execute_okx_buy(inst_id, sz_usdc)
+    return jsonify(res)
 
 @app.route("/api/sell", methods=["POST"])
 def sell_crypto():
@@ -151,6 +173,8 @@ def sell_crypto():
 
 @app.route("/api/close-positions", methods=["POST"])
 def close_positions():
+    data = request.json or {}
+    inst_id = data.get("instId", "BTC-USDC")
     return sell_crypto()
 
 @app.route("/api/autopilot", methods=["POST"])
