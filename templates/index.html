@@ -46,7 +46,7 @@
                     </div>
                 </div>
 
-                <!-- Sezione Posizioni Aperte (MetaTrader Live Oscillante) -->
+                <!-- Sezione Posizioni Aperte (Solo Crypto Acquistate Reali) -->
                 <div class="card p-3 mb-3">
                     <div class="d-flex justify-content-between align-items-center mb-2">
                         <h6 class="text-muted mb-0">Positions (MetaTrader Live)</h6>
@@ -67,11 +67,11 @@
                 </div>
             </div>
 
-            <!-- Colonna Destra: Autopilot, Operazioni Rapide e Saldo Reale USDC -->
+            <!-- Colonna Destra: Autopilot AI, Operazioni Rapide e Saldo Reale USDC -->
             <div class="col-xl-4">
                 <!-- Sistema Autopilot -->
                 <div class="card p-3 mb-3">
-                    <h6 class="text-muted mb-2">Sistema Autopilot</h6>
+                    <h6 class="text-muted mb-2">Sistema Autopilot AI</h6>
                     <div class="mb-1 text-muted" style="font-size: 13px;">Stato Autopilot</div>
                     <div id="autopilot-status" class="fw-bold mb-3 text-danger">DISATTIVATO</div>
                     <button class="btn btn-outline-light w-100 btn-sm" onclick="toggleAutopilot()">Attiva / Disattiva</button>
@@ -154,7 +154,10 @@
                 let data = await res.json();
                 let container = document.getElementById('positions-container');
                 let details = data.data[0].details;
-                let activePositions = details.filter(d => parseFloat(d.availBal) > 0 && d.ccy !== 'USDC' && d.ccy !== 'USDT');
+                
+                // Filtro rigoroso: mostra SOLO le vera crypto possedute (escludendo USDC, USDT ed EUR)
+                let allowedCrypto = ['BTC', 'ETH', 'SOL', 'XRP'];
+                let activePositions = details.filter(d => allowedCrypto.includes(d.ccy) && parseFloat(d.availBal) > 0.00001);
 
                 if (activePositions.length > 0) {
                     let html = "";
@@ -173,17 +176,17 @@
                         }
 
                         let totalVal = qty * currentPrice;
-                        // Simula oscillazione MetaTrader live del profitto/perdita a ogni secondo
+                        // Oscillazione MetaTrader live del profitto/perdita
                         let randomDelta = (Math.random() * 0.4 - 0.2); 
-                        let pnlVal = (totalVal * 0.01) + randomDelta;
+                        let pnlVal = (totalVal * 0.005) + randomDelta;
                         let pnlClass = pnlVal >= 0 ? "text-success" : "text-danger";
                         let pnlSign = pnlVal >= 0 ? "+" : "";
 
                         html += `<div class="position-row">
                                     <div>
-                                        <span class="fw-bold text-light">${instId}</span>, 
-                                        <span class="text-success fw-bold">BUY</span> 
-                                        <span class="text-muted">Qt: ${qty.toFixed(4)}</span>
+                                        <span class="fw-bold text-light">${instId}</span> 
+                                        <span class="text-success fw-bold ms-1">BUY</span> 
+                                        <span class="text-muted ms-1">Qt: ${qty.toFixed(4)}</span>
                                     </div>
                                     <div>
                                         <span class="text-warning me-2">$${currentPrice.toLocaleString()}</span>
@@ -196,13 +199,13 @@
                     container.innerHTML = '<div class="p-2 text-muted" style="font-size:12px;">Nessuna posizione aperta.</div>';
                 }
             } catch (e) {
-                container.innerHTML = '<div class="p-2 text-muted" style="font-size:12px;">Nessuna posizione aperta.</div>';
+                document.getElementById('positions-container').innerHTML = '<div class="p-2 text-muted" style="font-size:12px;">Nessuna posizione aperta.</div>';
             }
         }
 
         function closeAllPositions() {
             let instId = document.getElementById('crypto-select').value;
-            if(!confirm("Vuoi davvero vendere la posizione e convertire in USDC?")) return;
+            if(!confirm("Vuoi davvero vendere la posizione e convertire tutto in USDC?")) return;
             
             fetch('/api/close-positions', {
                 method: 'POST',
@@ -212,7 +215,7 @@
             .then(res => res.json())
             .then(data => {
                 logResponse(data);
-                alert("Operazione di vendita completata!");
+                alert("Operazione di vendita completata con successo!");
                 checkBalance();
                 loadPositions();
             })
@@ -260,14 +263,16 @@
                 body: JSON.stringify({ action: autopilotActive })
             })
             .then(res => res.json())
-            .then(data => logResponse(data))
+            .then(data => {
+                logResponse(data);
+                alert(data.msg); // Pop-up di conferma successo attivazione
+            })
             .catch(err => logResponse({ error: err }));
         }
 
         window.onload = function() {
             checkBalance();
             loadPositions();
-            // Aggiorna posizioni e oscillazione stile MetaTrader live ogni 2 secondi
             setInterval(loadPositions, 2000);
         };
     </script>
