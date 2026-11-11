@@ -19,7 +19,7 @@
 <body class="p-3">
     <div class="container-fluid" style="max-width: 1400px;">
         <div class="row">
-            <!-- Colonna Sinistra: Grafico, Posizioni MetaTrader Live e Log -->
+            <!-- Colonna Sinistra: Grafico, Posizioni Reali MetaTrader e Log -->
             <div class="col-xl-8 mb-3">
                 <!-- Sezione Grafico Candele -->
                 <div class="card p-3 mb-3">
@@ -46,7 +46,7 @@
                     </div>
                 </div>
 
-                <!-- Sezione Posizioni Aperte (Solo Crypto Reali Acquistate) -->
+                <!-- Sezione Posizioni Aperte (Solo le tue operazioni reali) -->
                 <div class="card p-3 mb-3">
                     <div class="d-flex justify-content-between align-items-center mb-2">
                         <h6 class="text-muted mb-0">Positions (MetaTrader Live)</h6>
@@ -60,10 +60,10 @@
                     </div>
                 </div>
 
-                <!-- Sezione Log e Risposte API OKX -->
+                <!-- Sezione Log e Attività Autopilot AI -->
                 <div class="card p-3">
-                    <h6 class="text-muted mb-2">Log e Risposte API OKX</h6>
-                    <pre id="api-log" class="p-2 rounded mb-0" style="max-height: 150px; overflow-y: auto;">Pronto.</pre>
+                    <h6 class="text-muted mb-2">Log e Attività Autopilot AI</h6>
+                    <pre id="api-log" class="p-2 rounded mb-0" style="max-height: 150px; overflow-y: auto;">Autopilot pronto all'attivazione...</pre>
                 </div>
             </div>
 
@@ -121,15 +121,10 @@
             document.getElementById('order-size').value = val;
         }
 
-        function logResponse(data) {
-            document.getElementById('api-log').innerText = JSON.stringify(data, null, 2);
-        }
-
         function checkBalance() {
             fetch('/api/balance')
                 .then(res => res.json())
                 .then(data => {
-                    logResponse(data);
                     try {
                         let details = data.data[0].details;
                         let ccyBal = details.find(d => d.ccy === 'USDC');
@@ -155,9 +150,9 @@
                 let container = document.getElementById('positions-container');
                 let details = data.data[0].details;
                 
-                // Filtro rigoroso: mostra SOLO le vere crypto possedute (BTC, ETH, SOL, XRP) con saldo maggiore di zero
+                // Mostra SOLO le criptovalute acquistate con saldo reale attivo maggiore di zero (esclude residui o altre monete)
                 let allowedCrypto = ['BTC', 'ETH', 'SOL', 'XRP'];
-                let activePositions = details.filter(d => allowedCrypto.includes(d.ccy) && parseFloat(d.availBal) > 0.00001);
+                let activePositions = details.filter(d => allowedCrypto.includes(d.ccy) && parseFloat(d.availBal) > 0.0001);
 
                 if (activePositions.length > 0) {
                     let html = "";
@@ -198,8 +193,18 @@
                     container.innerHTML = '<div class="p-2 text-muted" style="font-size:12px;">Nessuna posizione aperta.</div>';
                 }
             } catch (e) {
-                document.getElementById('positions-container').innerHTML = '<div class="p-2 text-muted" style="font-size:12px;">Nessuna posizione aperta.</div>';
+                container.innerHTML = '<div class="p-2 text-muted" style="font-size:12px;">Nessuna posizione aperta.</div>';
             }
+        }
+
+        async function updateAutopilotLogs() {
+            try {
+                let res = await fetch('/api/autopilot-logs');
+                let data = await res.json();
+                if (data.logs && data.logs.length > 0) {
+                    document.getElementById('api-log').innerText = data.logs.join('\n');
+                }
+            } catch(e) {}
         }
 
         function closeAllPositions() {
@@ -213,13 +218,12 @@
             })
             .then(res => res.json())
             .then(data => {
-                logResponse(data);
                 alert("Operazione di vendita completata con successo!");
                 checkBalance();
                 loadPositions();
             })
             .catch(err => {
-                document.getElementById('api-log').innerText = "Errore chiusura: " + err;
+                alert("Errore chiusura: " + err);
             });
         }
 
@@ -236,7 +240,6 @@
             })
             .then(res => res.json())
             .then(data => {
-                logResponse(data);
                 if (data.code !== "0") {
                     alert("Errore Ordine OKX: " + (data.msg || "Verifica il saldo"));
                 } else {
@@ -246,7 +249,7 @@
                 loadPositions();
             })
             .catch(err => {
-                document.getElementById('api-log').innerText = "Errore ordine: " + err;
+                alert("Errore ordine: " + err);
             });
         }
 
@@ -263,16 +266,16 @@
             })
             .then(res => res.json())
             .then(data => {
-                logResponse(data);
                 alert(data.msg);
             })
-            .catch(err => logResponse({ error: err }));
+            .catch(err => alert("Errore autopilot: " + err));
         }
 
         window.onload = function() {
             checkBalance();
             loadPositions();
             setInterval(loadPositions, 2000);
+            setInterval(updateAutopilotLogs, 3000);
         };
     </script>
 </body>
