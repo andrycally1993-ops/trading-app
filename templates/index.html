@@ -46,7 +46,7 @@
                     </div>
                 </div>
 
-                <!-- Sezione Posizioni Aperte (Solo Crypto Acquistate Reali) -->
+                <!-- Sezione Posizioni Aperte (Solo Crypto Reali Acquistate) -->
                 <div class="card p-3 mb-3">
                     <div class="d-flex justify-content-between align-items-center mb-2">
                         <h6 class="text-muted mb-0">Positions (MetaTrader Live)</h6>
@@ -155,7 +155,7 @@
                 let container = document.getElementById('positions-container');
                 let details = data.data[0].details;
                 
-                // Filtro rigoroso: mostra SOLO le vera crypto possedute (escludendo USDC, USDT ed EUR)
+                // Filtro rigoroso: mostra SOLO le vere crypto possedute (BTC, ETH, SOL, XRP) con saldo maggiore di zero
                 let allowedCrypto = ['BTC', 'ETH', 'SOL', 'XRP'];
                 let activePositions = details.filter(d => allowedCrypto.includes(d.ccy) && parseFloat(d.availBal) > 0.00001);
 
@@ -176,7 +176,6 @@
                         }
 
                         let totalVal = qty * currentPrice;
-                        // Oscillazione MetaTrader live del profitto/perdita
                         let randomDelta = (Math.random() * 0.4 - 0.2); 
                         let pnlVal = (totalVal * 0.005) + randomDelta;
                         let pnlClass = pnlVal >= 0 ? "text-success" : "text-danger";
@@ -265,7 +264,7 @@
             .then(res => res.json())
             .then(data => {
                 logResponse(data);
-                alert(data.msg); // Pop-up di conferma successo attivazione
+                alert(data.msg);
             })
             .catch(err => logResponse({ error: err }));
         }
