@@ -19,7 +19,7 @@
 <body class="p-3">
     <div class="container-fluid" style="max-width: 1400px;">
         <div class="row">
-            <!-- Colonna Sinistra: Grafico, Posizioni stile MetaTrader e Log -->
+            <!-- Colonna Sinistra: Grafico, Posizioni stile MetaTrader Live e Log -->
             <div class="col-xl-8 mb-3">
                 <!-- Sezione Grafico Candele -->
                 <div class="card p-3 mb-3">
@@ -46,7 +46,7 @@
                     </div>
                 </div>
 
-                <!-- Sezione Posizioni Aperte (Stile MetaTrader Live) -->
+                <!-- Sezione Posizioni Aperte (MetaTrader Live pulita) -->
                 <div class="card p-3 mb-3">
                     <div class="d-flex justify-content-between align-items-center mb-2">
                         <h6 class="text-muted mb-0">Positions (MetaTrader Live)</h6>
@@ -67,11 +67,11 @@
                 </div>
             </div>
 
-            <!-- Colonna Destra: Autopilot, Operazioni Rapide e Saldo Reale USDC -->
+            <!-- Colonna Destra: Autopilot AI, Operazioni Rapide e Saldo Reale USDC -->
             <div class="col-xl-4">
                 <!-- Sistema Autopilot -->
                 <div class="card p-3 mb-3">
-                    <h6 class="text-muted mb-2">Sistema Autopilot</h6>
+                    <h6 class="text-muted mb-2">Sistema Autopilot AI</h6>
                     <div class="mb-1 text-muted" style="font-size: 13px;">Stato Autopilot</div>
                     <div id="autopilot-status" class="fw-bold mb-3 text-danger">DISATTIVATO</div>
                     <button class="btn btn-outline-light w-100 btn-sm" onclick="toggleAutopilot()">Attiva / Disattiva</button>
@@ -153,6 +153,7 @@
                 let data = await res.json();
                 let container = document.getElementById('positions-container');
                 let details = data.data[0].details;
+                // Filtra solo le vere posizioni possedute con saldo attivo (esclude USDC/USDT)
                 let activePositions = details.filter(d => parseFloat(d.availBal) > 0 && d.ccy !== 'USDC' && d.ccy !== 'USDT');
 
                 if (activePositions.length > 0) {
@@ -162,7 +163,6 @@
                         let qty = parseFloat(pos.availBal);
                         let instId = ccy + "-USDC";
 
-                        // Prende il prezzo live da OKX per simulare l'andamento MetaTrader
                         let tickerRes = await fetch(`/api/ticker?instId=${instId}`);
                         let tickerData = await tickerRes.json();
                         let currentPrice = 0;
@@ -173,7 +173,6 @@
                         }
 
                         let totalVal = qty * currentPrice;
-                        let pnlColor = "text-success"; // Simulazione oscillazione verde/rossa
                         
                         html += `<div class="position-row">
                                     <div>
@@ -183,7 +182,7 @@
                                     </div>
                                     <div>
                                         <span class="text-warning me-2">Prezzo: $${currentPrice.toLocaleString()}</span>
-                                        <span class="${pnlColor} fw-bold">Val: $${totalVal.toFixed(2)}</span>
+                                        <span class="text-success fw-bold">Val: $${totalVal.toFixed(2)}</span>
                                     </div>
                                  </div>`;
                     }
@@ -240,7 +239,7 @@
                 loadPositions();
             })
             .catch(err => {
-                document.getElementById('api-log').innerText = "Errore ordine: " + err;
+                document.getElementById('api-log': 'Errore ordine: ' + err);
             });
         }
 
@@ -263,7 +262,7 @@
         window.onload = function() {
             checkBalance();
             loadPositions();
-            // Aggiorna la tabella posizioni ogni 4 secondi in stile MetaTrader live
+            // Aggiorna automaticamente i prezzi delle posizioni aperte stile MetaTrader live
             setInterval(loadPositions, 4000);
         };
     </script>
