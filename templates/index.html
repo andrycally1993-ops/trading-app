@@ -333,30 +333,12 @@ async function updatePortfolioDynamic() {
         console.error("Errore aggiornamento dati", e);
     }
 }
-            let res = await fetch('/api/portfolio-summary');
-            let data = await res.json();
-            
-            let equityEl = document.getElementById('total-equity-display');
-            if (equityEl) {
-                equityEl.innerText = data.total_equity.toFixed(2) + " USDC";
-                
-                // Verde se in guadagno o pari, Rosso se in perdita
-                if (data.pnl >= 0) {
-                    equityEl.style.color = "#2ecc71";
-                } else {
-                    equityEl.style.color = "#e74c3c";
-                }
-            }
-        } catch (e) {
-            console.error("Errore aggiornamento equity", e);
-        }
-    }
 
-    // Aggiungilo all'avvio e fallo ripetere ogni 10 secondi
-    window.addEventListener('DOMContentLoaded', () => {
-        updatePortfolioDynamic();
-        setInterval(updatePortfolioDynamic, 10000);
-    });
-    </script>
+// Avvio automatico all'100% pulito
+window.addEventListener('DOMContentLoaded', () => {
+    updatePortfolioDynamic();
+    setInterval(updatePortfolioDynamic, 2000);
+});
+</script>
 </body>
 </html>
