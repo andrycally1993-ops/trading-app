@@ -242,9 +242,9 @@ def autopilot():
 @app.route('/api/portfolio-summary', methods=['GET'])
 def get_portfolio_summary():
     try:
-        usdc_free = 12.46     
-        eth_position_val = 11.38 
-        pnl_val = 0.22        
+        usdc_free = 23.40     
+        eth_position_val = 0.0 
+        pnl_val = -0.34  # Valore allineato con il PnL giornaliero di OKX
         total_equity = usdc_free + eth_position_val
         
         return jsonify({
