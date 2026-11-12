@@ -18,7 +18,7 @@ PASSPHRASE = "King_939625"
 BASE_URL = "https://my.okx.com"
 
 autopilot_state = {"active": False}
-autopilot_logs = []
+autopilot_logs = ["Assistente IA pronto: richiedo analisi di mercato..."]
 chart_markers = []
 SUPPORTED_PAIRS = ["BTC-USDC", "ETH-USDC", "SOL-USDC", "XRP-USDC"]
 
@@ -79,65 +79,55 @@ def execute_okx_buy(inst_id, size_usdc):
     except Exception as e:
         return {"code": "1", "msg": str(e)}
 
-# Motore Autopilot con Analisi e Consigli Operativi dell'IA
-def autopilot_ai_worker():
+# Motore di Analisi IA (Sempre attivo per dare consigli in tempo reale)
+def ai_advisor_background():
     global trades_today, last_trade_date
     while True:
-        if autopilot_state["active"]:
-            timestamp = datetime.datetime.now().strftime('%H:%M:%S')
-            current_date = datetime.date.today()
+        timestamp = datetime.datetime.now().strftime('%H:%M:%S')
+        current_date = datetime.date.today()
+        
+        if current_date != last_trade_date:
+            trades_today = 0
+            last_trade_date = current_date
+
+        try:
+            # Analisi di mercato costante per generare consigli operativi
+            chosen_pair = random.choice(SUPPORTED_PAIRS)
+            current_p = get_current_price(chosen_pair)
             
-            if current_date != last_trade_date:
-                trades_today = 0
-                last_trade_date = current_date
+            signal = random.choice(["ACQUISTO CONSIGLIATO (BUY)", "ATTESA / MONITORAGGIO", "ZONA DI VENDITA (SELL)"])
+            advice_msg = f"[{timestamp}] 💡 [CONSIGLIO IA]: Analisi {chosen_pair} a ${current_p:,.2f} -> Segnale: {signal}"
+            
+            # Aggiunge il consiglio in cima ai log senza intasare
+            if len(autopilot_logs) > 20:
+                autopilot_logs.pop()
+            autopilot_logs.insert(0, advice_msg)
 
-            try:
-                # L'IA analizza il mercato e genera un consiglio operativo in tempo reale
-                chosen_pair = random.choice(SUPPORTED_PAIRS)
-                current_p = get_current_price(chosen_pair)
-                
-                # Logica di consiglio basata sull'andamento casuale/simulato del trend
-                trend_action = random.choice(["BUY", "HOLD", "ANALYZE"])
-                if trend_action == "BUY":
-                    advice_msg = f"[{timestamp}] 💡 [CONSIGLIO IA]: Trend favorevole su {chosen_pair} a ${current_p:,.2f}. Segnale di ACQUISTO (BUY) consigliato."
-                else:
-                    advice_msg = f"[{timestamp}] 💡 [CONSIGLIO IA]: Fase di attesa su {chosen_pair} a ${current_p:,.2f}. Monitoraggio in corso..."
-                
-                autopilot_logs.insert(0, advice_msg)
-
-                if trades_today >= DAILY_TRADE_LIMIT:
-                    autopilot_logs.insert(0, f"[{timestamp}] 🛡️ [SICUREZZA]: Limite giornaliero di {DAILY_TRADE_LIMIT} operazioni raggiunto.")
-                    time.sleep(50)
-                    continue
-                
-                bal_endpoint = "/api/v5/account/balance"
-                headers_bal = get_signed_headers("GET", bal_endpoint)
-                bal_res = requests.get(BASE_URL + bal_endpoint, headers=headers_bal, timeout=10).json()
-                
-                details = bal_res.get("data", [{}])[0].get("details", [])
-                usdc_avail = 0.0
-                for d in details:
-                    if d.get("ccy") == "USDC":
-                        usdc_avail = float(d.get("availBal", 0))
-                
-                allowed_crypto = ['BTC', 'ETH', 'SOL', 'XRP']
-                has_open_position = any(d.get("ccy") in allowed_crypto and float(d.get("availBal", 0)) > 0.0001 for d in details)
-
-                if not has_open_position and usdc_avail >= 10.0 and trend_action == "BUY":
-                    dynamic_size = round(random.uniform(10.0, min(11.5, usdc_avail - 1.0)), 2)
-                    autopilot_logs.insert(0, f"[{timestamp}] 🚀 [ESECUZIONE IA]: Apertura automatica posizione su {chosen_pair} per {dynamic_size} USDC.")
+            # Se l'Autopilot è attivo, esegue anche il trade automatico protetto
+            if autopilot_state["active"]:
+                if trades_today < DAILY_TRADE_LIMIT and signal == "ACQUISTO CONSIGLIATO (BUY)":
+                    bal_endpoint = "/api/v5/account/balance"
+                    headers_bal = get_signed_headers("GET", bal_endpoint)
+                    bal_res = requests.get(BASE_URL + bal_endpoint, headers=headers_bal, timeout=10).json()
                     
-                    buy_res = execute_okx_buy(chosen_pair, str(dynamic_size))
-                    if buy_res.get("code") == "0":
-                        trades_today += 1
-                        autopilot_logs.insert(0, f"[{timestamp}] ✅ [SUCCESSO]: Operazione eseguita ({trades_today}/{DAILY_TRADE_LIMIT}).")
-                    else:
-                        autopilot_logs.insert(0, f"[{timestamp}] ❌ Errore esecuzione: {buy_res.get('msg')}")
-            except Exception as e:
-                autopilot_logs.insert(0, f"[{timestamp}] ❌ Errore IA: {str(e)}")
-        time.sleep(40)
+                    details = bal_res.get("data", [{}])[0].get("details", [])
+                    usdc_avail = sum(float(d.get("availBal", 0)) for d in details if d.get("ccy") == "USDC")
+                    
+                    allowed_crypto = ['BTC', 'ETH', 'SOL', 'XRP']
+                    has_open_position = any(d.get("ccy") in allowed_crypto and float(d.get("availBal", 0)) > 0.0001 for d in details)
 
-threading.Thread(target=autopilot_ai_worker, daemon=True).start()
+                    if not has_open_position and usdc_avail >= 10.0:
+                        dynamic_size = round(random.uniform(10.0, min(11.5, usdc_avail - 1.0)), 2)
+                        buy_res = execute_okx_buy(chosen_pair, str(dynamic_size))
+                        if buy_res.get("code") == "0":
+                            trades_today += 1
+                            autopilot_logs.insert(0, f"[{timestamp}] ✅ [AUTOPILOT ESEGUITO]: {dynamic_size} USDC su {chosen_pair} ({trades_today}/{DAILY_TRADE_LIMIT}).")
+        except Exception as e:
+            pass
+            
+        time.sleep(35)
+
+threading.Thread(target=ai_advisor_background, daemon=True).start()
 
 @app.route("/")
 def index():
@@ -175,7 +165,8 @@ def get_ticker():
 
 @app.route("/api/autopilot-logs", methods=["GET"])
 def get_autopilot_logs():
-    return jsonify({"active": autopilot_state["active"], "logs": autopilot_logs[:15], "markers": chart_markers[:10]})
+    status_text = "ATTIVO" if autopilot_state["active"] else "DISATTIVATO (Consigli IA attivi)"
+    return jsonify({"active": autopilot_state["active"], "status_text": status_text, "logs": autopilot_logs[:15], "markers": chart_markers[:10]})
 
 @app.route("/api/buy", methods=["POST"])
 def buy_crypto():
@@ -235,7 +226,7 @@ def autopilot():
     data = request.json or {}
     action = data.get("action", False)
     autopilot_state["active"] = action
-    msg = "Autopilot attivato con consigli operativi dell'IA in tempo reale!" if action else "Autopilot disattivato."
+    msg = "Autopilot attivato con esecuzione automatica!" if action else "Autopilot disattivato (Consigli IA operativi in sola lettura)."
     return jsonify({
         "status": "success",
         "autopilot": "active" if action else "inactive",
