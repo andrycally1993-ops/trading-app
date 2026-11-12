@@ -46,7 +46,7 @@
                     </div>
                 </div>
 
-                <!-- Sezione Posizioni Aperte (Solo le tue operazioni reali) -->
+                <!-- Sezione Posizioni Aperte -->
                 <div class="card p-3 mb-3">
                     <div class="d-flex justify-content-between align-items-center mb-2">
                         <h6 class="text-muted mb-0">Positions (MetaTrader Live)</h6>
@@ -62,8 +62,8 @@
 
                 <!-- Sezione Log e Attività Autopilot AI -->
                 <div class="card p-3">
-                    <h6 class="text-muted mb-2">Log e Attività Autopilot AI</h6>
-                    <pre id="api-log" class="p-2 rounded mb-0" style="max-height: 150px; overflow-y: auto;">Autopilot pronto all'attivazione...</pre>
+                    <h6 class="text-muted mb-2">Log di Sicurezza e Autopilot AI</h6>
+                    <pre id="api-log" class="p-2 rounded mb-0" style="max-height: 150px; overflow-y: auto;">Autopilot protetto pronto all'attivazione...</pre>
                 </div>
             </div>
 
@@ -71,7 +71,7 @@
             <div class="col-xl-4">
                 <!-- Sistema Autopilot -->
                 <div class="card p-3 mb-3">
-                    <h6 class="text-muted mb-2">Sistema Autopilot AI</h6>
+                    <h6 class="text-muted mb-2">Sistema Autopilot Sicuro</h6>
                     <div class="mb-1 text-muted" style="font-size: 13px;">Stato Autopilot</div>
                     <div id="autopilot-status" class="fw-bold mb-3 text-danger">DISATTIVATO</div>
                     <button class="btn btn-outline-light w-100 btn-sm" onclick="toggleAutopilot()">Attiva / Disattiva</button>
@@ -150,7 +150,6 @@
                 let container = document.getElementById('positions-container');
                 let details = data.data[0].details;
                 
-                // Mostra SOLO le criptovalute effettivamente possedute con saldo maggiore di zero
                 let allowedCrypto = ['BTC', 'ETH', 'SOL', 'XRP'];
                 let activePositions = details.filter(d => allowedCrypto.includes(d.ccy) && parseFloat(d.availBal) > 0.0001);
 
@@ -193,7 +192,7 @@
                     container.innerHTML = '<div class="p-2 text-muted" style="font-size:12px;">Nessuna posizione aperta.</div>';
                 }
             } catch (e) {
-                container.innerHTML = '<div class="p-2 text-muted" style="font-size:12px;">Nessuna posizione aperta.</div>';
+                container.innerHTML = '<div class="p-2 text-danger" style="font-size:12px;">Errore caricamento posizioni.</div>';
             }
         }
 
