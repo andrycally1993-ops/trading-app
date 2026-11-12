@@ -63,7 +63,7 @@ def execute_okx_buy(inst_id, size_usdc):
     except Exception as e:
         return {"code": "1", "msg": str(e)}
 
-# Motore Autopilot IA Reale e Operativo
+# Motore Autopilot IA Reale
 def autopilot_ai_worker():
     while True:
         if autopilot_state["active"]:
@@ -72,7 +72,7 @@ def autopilot_ai_worker():
                 log_msg = f"[{timestamp}] 🤖 Autopilot AI: Analisi mercati in corso..."
                 autopilot_logs.insert(0, log_msg)
                 
-                bal_endpoint = "/api/v5/account/balance?ccy=USDC"
+                bal_endpoint = "/api/v5/account/balance"
                 headers_bal = get_signed_headers("GET", bal_endpoint)
                 bal_res = requests.get(BASE_URL + bal_endpoint, headers=headers_bal, timeout=10).json()
                 
@@ -82,22 +82,26 @@ def autopilot_ai_worker():
                     if d.get("ccy") == "USDC":
                         usdc_avail = float(d.get("availBal", 0))
                 
-                if usdc_avail >= 12.0:
+                # Controlla se ci sono già posizioni crypto aperte
+                allowed_crypto = ['BTC', 'ETH', 'SOL', 'XRP']
+                has_open_position = any(d.get("ccy") in allowed_crypto and float(d.get("availBal", 0)) > 0.0001 for d in details)
+
+                if not has_open_position and usdc_avail >= 12.0:
                     chosen_pair = random.choice(SUPPORTED_PAIRS)
                     buy_res = execute_okx_buy(chosen_pair, "12")
                     if buy_res.get("code") == "0":
-                        success_msg = f"[{timestamp}] ✅ Autopilot IA ha ACQUISTATO 12 USDC su {chosen_pair}!"
+                        success_msg = f"[{timestamp}] ✅ Autopilot IA ha acquistato 12 USDC su {chosen_pair}!"
                         autopilot_logs.insert(0, success_msg)
                     else:
                         err_msg = f"[{timestamp}] ❌ Autopilot errore su {chosen_pair}: {buy_res.get('msg')}"
                         autopilot_logs.insert(0, err_msg)
                 else:
-                    low_msg = f"[{timestamp}] ⚠️ Autopilot: Saldo USDC ({usdc_avail}) insufficiente."
-                    autopilot_logs.insert(0, low_msg)
+                    info_msg = f"[{timestamp}] ℹ️ Autopilot in attesa (Posizione aperta esistente o saldo USDC {usdc_avail} insufficiente)."
+                    autopilot_logs.insert(0, info_msg)
             except Exception as e:
                 err_sys = f"[{timestamp}] ❌ Autopilot eccezione: {str(e)}"
                 autopilot_logs.insert(0, err_sys)
-        time.sleep(35)
+        time.sleep(40)
 
 threading.Thread(target=autopilot_ai_worker, daemon=True).start()
 
@@ -149,25 +153,26 @@ def buy_crypto():
 
 @app.route("/api/sell", methods=["POST"])
 def sell_crypto():
-    data = request.json or {}
-    inst_id = data.get("instId", "BTC-USDC")
-    base_ccy = inst_id.split("-")[0]
-    
-    bal_endpoint = f"/api/v5/account/balance?ccy={base_ccy}"
+    bal_endpoint = "/api/v5/account/balance"
     headers_bal = get_signed_headers("GET", bal_endpoint)
-    
     try:
         bal_res = requests.get(BASE_URL + bal_endpoint, headers=headers_bal, timeout=10).json()
         details = bal_res.get("data", [{}])[0].get("details", [])
+        
+        allowed_crypto = ['BTC', 'ETH', 'SOL', 'XRP']
+        target_ccy = None
         avail_sz = "0"
+        
         for d in details:
-            if d.get("ccy") == base_ccy:
-                avail_sz = d.get("availBal", "0")
+            if d.get("ccy") in allowed_crypto and float(d.get("availBal", 0)) > 0.00001:
+                target_ccy = d.get("ccy")
+                avail_sz = d.get("availBal")
                 break
         
-        if float(avail_sz) <= 0:
-            return jsonify({"code": "1", "msg": f"Nessun saldo {base_ccy} disponibile da vendere."})
+        if not target_ccy or float(avail_sz) <= 0:
+            return jsonify({"code": "1", "msg": "Nessuna posizione crypto attiva da vendere."})
 
+        inst_id = f"{target_ccy}-USDC"
         endpoint = "/api/v5/trade/order"
         payload = {
             "instId": inst_id,
@@ -185,8 +190,6 @@ def sell_crypto():
 
 @app.route("/api/close-positions", methods=["POST"])
 def close_positions():
-    data = request.json or {}
-    inst_id = data.get("instId", "BTC-USDC")
     return sell_crypto()
 
 @app.route("/api/autopilot", methods=["POST"])
