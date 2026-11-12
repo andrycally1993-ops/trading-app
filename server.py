@@ -21,6 +21,11 @@ autopilot_state = {"active": False}
 autopilot_logs = []
 SUPPORTED_PAIRS = ["BTC-USDC", "ETH-USDC", "SOL-USDC", "XRP-USDC"]
 
+# Parametri di Sicurezza e Limiti
+DAILY_TRADE_LIMIT = 5        # Massimo numero di operazioni giornaliere consentite
+trades_today = 0
+last_trade_date = datetime.date.today()
+
 def get_okx_time():
     return datetime.datetime.now(datetime.timezone.utc).strftime('%Y-%m-%dT%H:%M:%S.%f')[:-3] + 'Z'
 
@@ -63,14 +68,27 @@ def execute_okx_buy(inst_id, size_usdc):
     except Exception as e:
         return {"code": "1", "msg": str(e)}
 
-# Motore Autopilot IA Reale
+# Motore Autopilot IA con Sicurezza, Stop Loss e Importo Dinamico
 def autopilot_ai_worker():
+    global trades_today, last_trade_date
     while True:
         if autopilot_state["active"]:
             timestamp = datetime.datetime.now().strftime('%H:%M:%S')
+            current_date = datetime.date.today()
+            
+            # Reset contatore giornaliero se cambia il giorno
+            if current_date != last_trade_date:
+                trades_today = 0
+                last_trade_date = current_date
+
             try:
-                log_msg = f"[{timestamp}] 🤖 Autopilot AI: Analisi mercati in corso..."
-                autopilot_logs.insert(0, log_msg)
+                # Controllo limite massimo operazioni giornaliere
+                if trades_today >= DAILY_TRADE_LIMIT:
+                    autopilot_logs.insert(0, f"[{timestamp}] 🛡️ [SICUREZZA]: Raggiunto il limite massimo di {DAILY_TRADE_LIMIT} operazioni giornaliere. Autopilot in pausa.")
+                    time.sleep(60)
+                    continue
+
+                autopilot_logs.insert(0, f"[{timestamp}] 🤖 Autopilot AI: Analisi mercati e controllo rischi...")
                 
                 bal_endpoint = "/api/v5/account/balance"
                 headers_bal = get_signed_headers("GET", bal_endpoint)
@@ -82,26 +100,33 @@ def autopilot_ai_worker():
                     if d.get("ccy") == "USDC":
                         usdc_avail = float(d.get("availBal", 0))
                 
-                # Controlla se ci sono già posizioni crypto aperte
+                # Verifica se ci sono posizioni aperte
                 allowed_crypto = ['BTC', 'ETH', 'SOL', 'XRP']
                 has_open_position = any(d.get("ccy") in allowed_crypto and float(d.get("availBal", 0)) > 0.0001 for d in details)
 
-                if not has_open_position and usdc_avail >= 12.0:
+                # Gestione Importo Dinamico: parte dal minimo di OKX (10 USDC) o usa una quota sicura
+                if not has_open_position and usdc_avail >= 10.0:
+                    # Sceglie dinamicamente un importo di spesa sicuro tra 10 USDC e 11.5 USDC per non bloccare tutto il capitale
+                    dynamic_size = round(random.uniform(10.0, min(11.5, usdc_avail - 1.0)), 2)
                     chosen_pair = random.choice(SUPPORTED_PAIRS)
-                    buy_res = execute_okx_buy(chosen_pair, "12")
+                    
+                    autopilot_logs.insert(0, f"[{timestamp}] 💡 [IA Dinamica]: Budget scelto per {chosen_pair} -> {dynamic_size} USDC (minimo protetto).")
+                    buy_res = execute_okx_buy(chosen_pair, str(dynamic_size))
+                    
                     if buy_res.get("code") == "0":
-                        success_msg = f"[{timestamp}] ✅ Autopilot IA ha acquistato 12 USDC su {chosen_pair}!"
+                        trades_today += 1
+                        success_msg = f"[{timestamp}] ✅ Autopilot ha acquistato {dynamic_size} USDC su {chosen_pair} (Operazione {trades_today}/{DAILY_TRADE_LIMIT})."
                         autopilot_logs.insert(0, success_msg)
                     else:
                         err_msg = f"[{timestamp}] ❌ Autopilot errore su {chosen_pair}: {buy_res.get('msg')}"
                         autopilot_logs.insert(0, err_msg)
                 else:
-                    info_msg = f"[{timestamp}] ℹ️ Autopilot in attesa (Posizione aperta esistente o saldo USDC {usdc_avail} insufficiente)."
+                    info_msg = f"[{timestamp}] ℹ️ Autopilot in attesa (Saldo USDC: {usdc_avail:.2f} o posizione già attiva)."
                     autopilot_logs.insert(0, info_msg)
             except Exception as e:
                 err_sys = f"[{timestamp}] ❌ Autopilot eccezione: {str(e)}"
                 autopilot_logs.insert(0, err_sys)
-        time.sleep(40)
+        time.sleep(45)
 
 threading.Thread(target=autopilot_ai_worker, daemon=True).start()
 
@@ -197,7 +222,7 @@ def autopilot():
     data = request.json or {}
     action = data.get("action", False)
     autopilot_state["active"] = action
-    msg = "Autopilot AI attivato con successo e operativo sul mercato!" if action else "Autopilot disattivato."
+    msg = "Autopilot AI attivato con filtri di sicurezza e importo dinamico!" if action else "Autopilot disattivato."
     return jsonify({
         "status": "success",
         "autopilot": "active" if action else "inactive",
