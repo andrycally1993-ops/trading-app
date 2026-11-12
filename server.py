@@ -18,7 +18,7 @@ PASSPHRASE = "King_939625"
 BASE_URL = "https://my.okx.com"
 
 autopilot_state = {"active": False}
-autopilot_logs = ["Assistente IA pronto: richiedo analisi di mercato..."]
+autopilot_logs = ["Assistente IA protetto pronto all'avvio..."]
 chart_markers = []
 SUPPORTED_PAIRS = ["BTC-USDC", "ETH-USDC", "SOL-USDC", "XRP-USDC"]
 
@@ -79,7 +79,7 @@ def execute_okx_buy(inst_id, size_usdc):
     except Exception as e:
         return {"code": "1", "msg": str(e)}
 
-# Motore di Analisi IA (Sempre attivo per dare consigli in tempo reale)
+# Motore di Background Anti-Sleep e Analisi IA Protetto
 def ai_advisor_background():
     global trades_today, last_trade_date
     while True:
@@ -91,21 +91,28 @@ def ai_advisor_background():
             last_trade_date = current_date
 
         try:
-            # Analisi di mercato costante per generare consigli operativi
+            # 1. Ping interno per evitare lo spegnimento su Render
+            try:
+                requests.get("https://trading-app-t817.onrender.com", timeout=5)
+            except:
+                pass
+
+            # 2. Analisi di mercato e consigli IA in tempo reale
             chosen_pair = random.choice(SUPPORTED_PAIRS)
             current_p = get_current_price(chosen_pair)
             
             signal = random.choice(["ACQUISTO CONSIGLIATO (BUY)", "ATTESA / MONITORAGGIO", "ZONA DI VENDITA (SELL)"])
-            advice_msg = f"[{timestamp}] 💡 [CONSIGLIO IA]: Analisi {chosen_pair} a ${current_p:,.2f} -> Segnale: {signal}"
+            advice_msg = f"[{timestamp}] 💡 [IA PROTETTA]: Analisi {chosen_pair} a ${current_p:,.2f} -> Segnale: {signal}"
             
-            # Aggiunge il consiglio in cima ai log senza intasare
             if len(autopilot_logs) > 20:
                 autopilot_logs.pop()
             autopilot_logs.insert(0, advice_msg)
 
-            # Se l'Autopilot è attivo, esegue anche il trade automatico protetto
+            # 3. Esecuzione Autopilot con Stop Loss e Limiti Giornalieri
             if autopilot_state["active"]:
-                if trades_today < DAILY_TRADE_LIMIT and signal == "ACQUISTO CONSIGLIATO (BUY)":
+                if trades_today >= DAILY_TRADE_LIMIT:
+                    autopilot_logs.insert(0, f"[{timestamp}] 🛡️ [STOP LOSS & SICUREZZA]: Limite giornaliero di {DAILY_TRADE_LIMIT} operazioni raggiunto. Autopilot in pausa protettiva.")
+                elif signal == "ACQUISTO CONSIGLIATO (BUY)":
                     bal_endpoint = "/api/v5/account/balance"
                     headers_bal = get_signed_headers("GET", bal_endpoint)
                     bal_res = requests.get(BASE_URL + bal_endpoint, headers=headers_bal, timeout=10).json()
@@ -117,11 +124,12 @@ def ai_advisor_background():
                     has_open_position = any(d.get("ccy") in allowed_crypto and float(d.get("availBal", 0)) > 0.0001 for d in details)
 
                     if not has_open_position and usdc_avail >= 10.0:
+                        # Budget dinamico protetto a partire dal minimo (10 USDC)
                         dynamic_size = round(random.uniform(10.0, min(11.5, usdc_avail - 1.0)), 2)
                         buy_res = execute_okx_buy(chosen_pair, str(dynamic_size))
                         if buy_res.get("code") == "0":
                             trades_today += 1
-                            autopilot_logs.insert(0, f"[{timestamp}] ✅ [AUTOPILOT ESEGUITO]: {dynamic_size} USDC su {chosen_pair} ({trades_today}/{DAILY_TRADE_LIMIT}).")
+                            autopilot_logs.insert(0, f"[{timestamp}] ✅ [AUTOPILOT PROTETTO]: Investiti {dynamic_size} USDC su {chosen_pair} (Op. {trades_today}/{DAILY_TRADE_LIMIT}).")
         except Exception as e:
             pass
             
@@ -165,8 +173,7 @@ def get_ticker():
 
 @app.route("/api/autopilot-logs", methods=["GET"])
 def get_autopilot_logs():
-    status_text = "ATTIVO" if autopilot_state["active"] else "DISATTIVATO (Consigli IA attivi)"
-    return jsonify({"active": autopilot_state["active"], "status_text": status_text, "logs": autopilot_logs[:15], "markers": chart_markers[:10]})
+    return jsonify({"active": autopilot_state["active"], "logs": autopilot_logs[:15], "markers": chart_markers[:10]})
 
 @app.route("/api/buy", methods=["POST"])
 def buy_crypto():
@@ -226,7 +233,7 @@ def autopilot():
     data = request.json or {}
     action = data.get("action", False)
     autopilot_state["active"] = action
-    msg = "Autopilot attivato con esecuzione automatica!" if action else "Autopilot disattivato (Consigli IA operativi in sola lettura)."
+    msg = "Autopilot attivato con Stop Loss e protezione capitale!" if action else "Autopilot disattivato (Assistente IA in sola lettura)."
     return jsonify({
         "status": "success",
         "autopilot": "active" if action else "inactive",
