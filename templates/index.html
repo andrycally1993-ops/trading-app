@@ -19,7 +19,7 @@
 <body class="p-3">
     <div class="container-fluid" style="max-width: 1400px;">
         <div class="row">
-            <!-- Colonna Sinistra: Grafico, Posizioni Reali MetaTrader e Log -->
+            <!-- Colonna Sinistra: Grafico, Posizioni MetaTrader e Log -->
             <div class="col-xl-8 mb-3">
                 <!-- Sezione Grafico Candele -->
                 <div class="card p-3 mb-3">
@@ -150,7 +150,7 @@
                 let container = document.getElementById('positions-container');
                 let details = data.data[0].details;
                 
-                // Mostra SOLO le criptovalute acquistate con saldo reale attivo maggiore di zero (esclude residui o altre monete)
+                // Mostra SOLO le criptovalute effettivamente possedute con saldo maggiore di zero
                 let allowedCrypto = ['BTC', 'ETH', 'SOL', 'XRP'];
                 let activePositions = details.filter(d => allowedCrypto.includes(d.ccy) && parseFloat(d.availBal) > 0.0001);
 
@@ -208,13 +208,12 @@
         }
 
         function closeAllPositions() {
-            let instId = document.getElementById('crypto-select').value;
-            if(!confirm("Vuoi davvero vendere la posizione e convertire tutto in USDC?")) return;
+            if(!confirm("Vuoi davvero vendere la posizione attiva e convertire tutto in USDC?")) return;
             
             fetch('/api/close-positions', {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({ instId: instId })
+                body: JSON.stringify({})
             })
             .then(res => res.json())
             .then(data => {
