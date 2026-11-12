@@ -306,10 +306,18 @@ async function updatePortfolioDynamic() {
         let data = await response.json();
         console.log("Dati ricevuti dal server:", data);
 
-        // 1. Aggiorna il Patrimonio Totale
+        // 1. Aggiorna il Patrimonio Totale e cambia colore in base al PnL (o equity)
         let equityElem = document.getElementById('total-equity-display');
         if (equityElem && data.total_equity !== undefined) {
             equityElem.innerText = data.total_equity + " USDC";
+            
+            // Se il PnL è minore di 0 colora in rosso, altrimenti in verde
+            let pnlVal = data.pnl !== undefined ? data.pnl : 0;
+            if (pnlVal < 0) {
+                equityElem.style.color = "#e74c3c"; // Rosso
+            } else {
+                equityElem.style.color = "#2ecc71"; // Verde
+            }
         }
 
         // 2. Aggiorna lo stato visivo dell'Autopilot
