@@ -302,31 +302,21 @@
 // Funzione per aggiornare il patrimonio totale e lo stato dell'autopilot
 async function updatePortfolioDynamic() {
     try {
-        let res = await fetch('/api/portfolio-summary');
-        let data = await res.json();
-        
-        // 1. Aggiorna il Patrimonio Totale Equity
-        let equityEl = document.getElementById('total-equity-display');
-        if (equityEl) {
-            equityEl.innerText = data.total_equity.toFixed(2) + " USDC";
-            if (data.pnl >= 0) {
-                equityEl.style.color = "#2ecc71"; // Verde
-            } else {
-                equityEl.style.color = "#e74c3c"; // Rosso
-            }
-        }
+        let response = await fetch('/api/portfolio-summary');
+        let data = await response.json();
+        console.log("Dati ricevuti dal server:", data);
 
-        // 2. Aggiorna lo stato visivo dell'Autopilot
-        let autopilotBadge = document.querySelector('h3'); 
-        if (data.autopilot_status === "active") {
-            if (autopilotBadge) {
+        // 1. Aggiorna lo stato visivo dell'Autopilot usando l'ID preciso
+        let autopilotBadge = document.getElementById('autopilot-status');
+        if (autopilotBadge) {
+            if (data.autopilot_status === "active") {
                 autopilotBadge.innerText = "ATTIVO";
                 autopilotBadge.style.color = "#2ecc71";
-            }
-        } else {
-            if (autopilotBadge) {
+                autopilotBadge.className = "fw-bold mb-3 text-success";
+            } else {
                 autopilotBadge.innerText = "DISATTIVATO";
                 autopilotBadge.style.color = "#e74c3c";
+                autopilotBadge.className = "fw-bold mb-3 text-danger";
             }
         }
     } catch (e) {
@@ -334,7 +324,7 @@ async function updatePortfolioDynamic() {
     }
 }
 
-// Avvio automatico all'100% pulito
+// Avvio automatico al caricamento della pagina
 window.addEventListener('DOMContentLoaded', () => {
     updatePortfolioDynamic();
     setInterval(updatePortfolioDynamic, 2000);
