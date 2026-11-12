@@ -19,10 +19,10 @@ BASE_URL = "https://my.okx.com"
 
 autopilot_state = {"active": False}
 autopilot_logs = []
+chart_markers = [] # Lista per tracciare i punti di acquisto e vendita sul grafico
 SUPPORTED_PAIRS = ["BTC-USDC", "ETH-USDC", "SOL-USDC", "XRP-USDC"]
 
-# Parametri di Sicurezza e Limiti
-DAILY_TRADE_LIMIT = 5        # Massimo numero di operazioni giornaliere consentite
+DAILY_TRADE_LIMIT = 5
 trades_today = 0
 last_trade_date = datetime.date.today()
 
@@ -50,6 +50,14 @@ def get_signed_headers(method, request_path, body=""):
         "x-simulated-trading": "0"
     }
 
+def get_current_price(inst_id):
+    try:
+        endpoint = f"/api/v5/market/ticker?instId={inst_id}"
+        res = requests.get(BASE_URL + endpoint, timeout=5).json()
+        return float(res.get("data", [{}])[0].get("last", 0))
+    except:
+        return 0.0
+
 def execute_okx_buy(inst_id, size_usdc):
     endpoint = "/api/v5/trade/order"
     payload = {
@@ -64,11 +72,14 @@ def execute_okx_buy(inst_id, size_usdc):
     headers = get_signed_headers("POST", endpoint, body_str)
     try:
         res = requests.post(BASE_URL + endpoint, headers=headers, data=body_str, timeout=10).json()
+        if res.get("code") == "0":
+            price = get_current_price(inst_id)
+            chart_markers.insert(0, {"type": "BUY", "pair": inst_id, "price": price, "time": datetime.datetime.now().strftime('%H:%M:%S')})
         return res
     except Exception as e:
         return {"code": "1", "msg": str(e)}
 
-# Motore Autopilot IA con Sicurezza, Stop Loss e Importo Dinamico
+# Motore Autopilot IA con tracciamento punti grafico
 def autopilot_ai_worker():
     global trades_today, last_trade_date
     while True:
@@ -76,19 +87,17 @@ def autopilot_ai_worker():
             timestamp = datetime.datetime.now().strftime('%H:%M:%S')
             current_date = datetime.date.today()
             
-            # Reset contatore giornaliero se cambia il giorno
             if current_date != last_trade_date:
                 trades_today = 0
                 last_trade_date = current_date
 
             try:
-                # Controllo limite massimo operazioni giornaliere
                 if trades_today >= DAILY_TRADE_LIMIT:
-                    autopilot_logs.insert(0, f"[{timestamp}] 🛡️ [SICUREZZA]: Raggiunto il limite massimo di {DAILY_TRADE_LIMIT} operazioni giornaliere. Autopilot in pausa.")
+                    autopilot_logs.insert(0, f"[{timestamp}] 🛡️ [SICUREZZA]: Limite giornaliero di {DAILY_TRADE_LIMIT} operazioni raggiunto.")
                     time.sleep(60)
                     continue
 
-                autopilot_logs.insert(0, f"[{timestamp}] 🤖 Autopilot AI: Analisi mercati e controllo rischi...")
+                autopilot_logs.insert(0, f"[{timestamp}] 🤖 Autopilot AI: Analisi mercati attiva...")
                 
                 bal_endpoint = "/api/v5/account/balance"
                 headers_bal = get_signed_headers("GET", bal_endpoint)
@@ -100,32 +109,26 @@ def autopilot_ai_worker():
                     if d.get("ccy") == "USDC":
                         usdc_avail = float(d.get("availBal", 0))
                 
-                # Verifica se ci sono posizioni aperte
                 allowed_crypto = ['BTC', 'ETH', 'SOL', 'XRP']
                 has_open_position = any(d.get("ccy") in allowed_crypto and float(d.get("availBal", 0)) > 0.0001 for d in details)
 
-                # Gestione Importo Dinamico: parte dal minimo di OKX (10 USDC) o usa una quota sicura
                 if not has_open_position and usdc_avail >= 10.0:
-                    # Sceglie dinamicamente un importo di spesa sicuro tra 10 USDC e 11.5 USDC per non bloccare tutto il capitale
                     dynamic_size = round(random.uniform(10.0, min(11.5, usdc_avail - 1.0)), 2)
                     chosen_pair = random.choice(SUPPORTED_PAIRS)
                     
-                    autopilot_logs.insert(0, f"[{timestamp}] 💡 [IA Dinamica]: Budget scelto per {chosen_pair} -> {dynamic_size} USDC (minimo protetto).")
                     buy_res = execute_okx_buy(chosen_pair, str(dynamic_size))
                     
                     if buy_res.get("code") == "0":
                         trades_today += 1
-                        success_msg = f"[{timestamp}] ✅ Autopilot ha acquistato {dynamic_size} USDC su {chosen_pair} (Operazione {trades_today}/{DAILY_TRADE_LIMIT})."
+                        success_msg = f"[{timestamp}] ✅ [PUNTO ACQUISTO APPLICATO]: {chosen_pair} a {dynamic_size} USDC."
                         autopilot_logs.insert(0, success_msg)
                     else:
-                        err_msg = f"[{timestamp}] ❌ Autopilot errore su {chosen_pair}: {buy_res.get('msg')}"
+                        err_msg = f"[{timestamp}] ❌ Autopilot errore: {buy_res.get('msg')}"
                         autopilot_logs.insert(0, err_msg)
                 else:
-                    info_msg = f"[{timestamp}] ℹ️ Autopilot in attesa (Saldo USDC: {usdc_avail:.2f} o posizione già attiva)."
-                    autopilot_logs.insert(0, info_msg)
+                    autopilot_logs.insert(0, f"[{timestamp}] ℹ️ Autopilot in attesa (Fondi: {usdc_avail:.2f} USDC o posizione attiva).")
             except Exception as e:
-                err_sys = f"[{timestamp}] ❌ Autopilot eccezione: {str(e)}"
-                autopilot_logs.insert(0, err_sys)
+                autopilot_logs.insert(0, f"[{timestamp}] ❌ Errore IA: {str(e)}")
         time.sleep(45)
 
 threading.Thread(target=autopilot_ai_worker, daemon=True).start()
@@ -166,7 +169,7 @@ def get_ticker():
 
 @app.route("/api/autopilot-logs", methods=["GET"])
 def get_autopilot_logs():
-    return jsonify({"active": autopilot_state["active"], "logs": autopilot_logs[:15]})
+    return jsonify({"active": autopilot_state["active"], "logs": autopilot_logs[:15], "markers": chart_markers[:10]})
 
 @app.route("/api/buy", methods=["POST"])
 def buy_crypto():
@@ -198,6 +201,8 @@ def sell_crypto():
             return jsonify({"code": "1", "msg": "Nessuna posizione crypto attiva da vendere."})
 
         inst_id = f"{target_ccy}-USDC"
+        price = get_current_price(inst_id)
+        
         endpoint = "/api/v5/trade/order"
         payload = {
             "instId": inst_id,
@@ -209,7 +214,9 @@ def sell_crypto():
         body_str = json.dumps(payload)
         headers_post = get_signed_headers("POST", endpoint, body_str)
         res = requests.post(BASE_URL + endpoint, headers=headers_post, data=body_str, timeout=10).json()
-        return jsonify(res)
+        if res.get("code") == "0":
+            chart_markers.insert(0, {"type": "SELL", "pair": inst_id, "price": price, "time": datetime.datetime.now().strftime('%H:%M:%S')})
+        return res
     except Exception as e:
         return jsonify({"code": "1", "msg": str(e)}), 500
 
@@ -222,7 +229,7 @@ def autopilot():
     data = request.json or {}
     action = data.get("action", False)
     autopilot_state["active"] = action
-    msg = "Autopilot AI attivato con filtri di sicurezza e importo dinamico!" if action else "Autopilot disattivato."
+    msg = "Autopilot attivato con tracciamento punti grafico e filtri di sicurezza!" if action else "Autopilot disattivato."
     return jsonify({
         "status": "success",
         "autopilot": "active" if action else "inactive",
