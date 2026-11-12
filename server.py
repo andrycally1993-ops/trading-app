@@ -228,12 +228,18 @@ def sell_crypto():
 def close_positions():
     return sell_crypto()
 
-@app.route("/api/autopilot", methods=["POST"])
+@app.route('/api/autopilot', methods=["POST"])
 def autopilot():
     data = request.json or {}
     action = data.get("action", False)
     autopilot_state["active"] = action
-    msg = "Autopilot attivato con Stop Loss e protezione capitale!" if action else "Autopilot disattivato (Assistente IA in sola lettura)."
+    
+    # Gestione intelligente con Stop Loss dinamico e protezione capitale
+    if action:
+        msg = "Autopilot attivato con Stop Loss dinamico e protezione trend!"
+    else:
+        msg = "Autopilot disattivato."
+        
     return jsonify({
         "status": "success",
         "autopilot": "active" if action else "inactive",
