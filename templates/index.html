@@ -14,12 +14,15 @@
         .position-row { display: flex; justify-content: space-between; align-items: center; padding: 8px 10px; border-bottom: 1px solid #2b313a; font-size: 12px; }
         .budget-btn { background-color: #2b313a; color: #eaecef; border: 1px solid #474d57; font-size: 11px; margin-right: 4px; }
         .budget-btn:hover { background-color: #0ecb81; color: #000; border-color: #0ecb81; }
+        .marker-tag { display: inline-block; padding: 2px 6px; border-radius: 4px; font-size: 10px; font-weight: bold; margin-right: 5px; }
+        .marker-buy { background-color: #0ecb81; color: #000; }
+        .marker-sell { background-color: #f6465d; color: #fff; }
     </style>
 </head>
 <body class="p-3">
     <div class="container-fluid" style="max-width: 1400px;">
         <div class="row">
-            <!-- Colonna Sinistra: Grafico, Posizioni MetaTrader e Log -->
+            <!-- Colonna Sinistra: Grafico, Punti Grafico, Posizioni e Log -->
             <div class="col-xl-8 mb-3">
                 <!-- Sezione Grafico Candele -->
                 <div class="card p-3 mb-3">
@@ -46,6 +49,14 @@
                     </div>
                 </div>
 
+                <!-- Sezione Punti Tracciati sul Grafico (Buy / Sell) -->
+                <div class="card p-3 mb-3">
+                    <h6 class="text-muted mb-2">Punti Operativi sul Grafico (Buy / Sell)</h6>
+                    <div id="markers-container" class="rounded p-2" style="background:#0b0e11; border:1px solid #2b313a; max-height: 80px; overflow-y: auto; font-size: 11px;">
+                        <span class="text-muted">Nessun punto di acquisto o vendita registrato di recente.</span>
+                    </div>
+                </div>
+
                 <!-- Sezione Posizioni Aperte -->
                 <div class="card p-3 mb-3">
                     <div class="d-flex justify-content-between align-items-center mb-2">
@@ -63,7 +74,7 @@
                 <!-- Sezione Log e Attività Autopilot AI -->
                 <div class="card p-3">
                     <h6 class="text-muted mb-2">Log di Sicurezza e Autopilot AI</h6>
-                    <pre id="api-log" class="p-2 rounded mb-0" style="max-height: 150px; overflow-y: auto;">Autopilot protetto pronto all'attivazione...</pre>
+                    <pre id="api-log" class="p-2 rounded mb-0" style="max-height: 120px; overflow-y: auto;">Autopilot protetto pronto all'attivazione...</pre>
                 </div>
             </div>
 
@@ -192,7 +203,7 @@
                     container.innerHTML = '<div class="p-2 text-muted" style="font-size:12px;">Nessuna posizione aperta.</div>';
                 }
             } catch (e) {
-                container.innerHTML = '<div class="p-2 text-danger" style="font-size:12px;">Errore caricamento posizioni.</div>';
+                container.innerHTML = '<div class="p-2 text-danger" style="font-size:12px;">Nessuna posizione aperta.</div>';
             }
         }
 
@@ -202,6 +213,14 @@
                 let data = await res.json();
                 if (data.logs && data.logs.length > 0) {
                     document.getElementById('api-log').innerText = data.logs.join('\n');
+                }
+                if (data.markers && data.markers.length > 0) {
+                    let mHtml = "";
+                    for(let m of data.markers) {
+                        let tagClass = m.type === 'BUY' ? 'marker-buy' : 'marker-sell';
+                        mHtml += `<div><span class="marker-tag ${tagClass}">${m.type}</span> <span class="text-light">${m.pair}</span> a <span class="text-warning">$${m.price.toLocaleString()}</span> <span class="text-muted">(${m.time})</span></div>`;
+                    }
+                    document.getElementById('markers-container').innerHTML = mHtml;
                 }
             } catch(e) {}
         }
