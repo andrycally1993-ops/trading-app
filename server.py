@@ -242,19 +242,18 @@ def autopilot():
 @app.route('/api/portfolio-summary', methods=['GET'])
 def get_portfolio_summary():
     try:
-        usdc_free = 12.46  # Il tuo saldo USDC libero attuale
-        eth_position_val = 11.38  # Il valore attuale della posizione ETH
-        pnl_val = 0.22  # Il profitto o perdita attuale (es. +0.22)
-        
+        usdc_free = 12.46     
+        eth_position_val = 11.38 
+        pnl_val = 0.22        
         total_equity = usdc_free + eth_position_val
         
         return jsonify({
             "usdc_free": round(usdc_free, 2),
             "total_equity": round(total_equity, 2),
-            "pnl": round(pnl_val, 2)
+            "pnl": round(pnl_val, 2),
+            "autopilot_status": "active"
         })
     except Exception as e:
         return jsonify({"error": str(e)}), 500
-
 if __name__ == "__main__":
     app.run(host="0.0.0.0", port=5000)
