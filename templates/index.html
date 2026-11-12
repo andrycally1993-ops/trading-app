@@ -306,7 +306,13 @@ async function updatePortfolioDynamic() {
         let data = await response.json();
         console.log("Dati ricevuti dal server:", data);
 
-        // 1. Aggiorna lo stato visivo dell'Autopilot usando l'ID preciso
+        // 1. Aggiorna il Patrimonio Totale
+        let equityElem = document.getElementById('total-equity-display');
+        if (equityElem && data.total_equity !== undefined) {
+            equityElem.innerText = data.total_equity + " USDC";
+        }
+
+        // 2. Aggiorna lo stato visivo dell'Autopilot
         let autopilotBadge = document.getElementById('autopilot-status');
         if (autopilotBadge) {
             if (data.autopilot_status === "active") {
